@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>투자 정보 대시보드 (13F · TOP100 · 뉴스 · 나스닥분석)</title>
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --card-bg: #ffffff;
+    --border: #e2e5ea;
+    --text: #1f2430;
+    --text-muted: #6b7280;
+    --accent: #2f6fed;
+    --accent-soft: #eaf1ff;
+    --up: #d34848;
+    --danger: #d34848;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    padding: 28px 16px 60px;
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", -apple-system, BlinkMacSystemFont, sans-serif;
+    line-height: 1.5;
+  }
+  .wrap { max-width: 920px; margin: 0 auto; }
+  header { margin-bottom: 22px; }
+  header h1 { font-size: 24px; margin: 0 0 6px; }
+  header p { margin: 0; color: var(--text-muted); font-size: 13.5px; }
+  .badge {
+    display: inline-block; background: var(--accent-soft); color: var(--accent);
+    font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; margin-bottom: 8px;
+  }
+  .panel {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px; margin-bottom: 20px; box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+  }
+  .panel h2 { font-size: 16px; margin: 0 0 14px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 14px; margin-bottom: 10px; }
+  .form-grid label { font-size: 12.5px; color: var(--text-muted); display: block; margin-bottom: 4px; }
+  .form-grid input, .form-grid textarea {
+    width: 100%; padding: 8px 10px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 13.5px; font-family: inherit; color: var(--text); background: #fbfbfc;
+  }
+  .full { grid-column: 1 / -1; }
+  textarea { resize: vertical; min-height: 90px; }
+  .hint { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .btn {
+    border: none; border-radius: 8px; padding: 9px 16px; font-size: 13.5px; font-weight: 600;
+    cursor: pointer; color: #fff; background: var(--accent);
+  }
+  .btn:hover { opacity: 0.92; }
+  .btn.secondary { background: #fff; color: var(--text-muted); border: 1px solid var(--border); }
+  .btn.danger { background: #fff; color: var(--danger); border: 1px solid #f2c6c6; padding: 5px 10px; font-size: 12px; }
+  .row-actions { display: flex; gap: 8px; margin-top: 6px; }
+
+  .entry {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px;
+    padding: 18px 20px; margin-bottom: 16px; box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+  }
+  .entry-header {
+    display: flex; align-items: baseline; justify-content: space-between; flex-wrap: wrap; gap: 6px;
+    border-bottom: 1px solid var(--border); padding-bottom: 10px; margin-bottom: 12px;
+  }
+  .entry-header h3 { font-size: 17px; margin: 0; }
+  .entry-header .meta { font-size: 12.5px; color: var(--text-muted); }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th, td { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--border); }
+  th { color: var(--text-muted); font-weight: 600; font-size: 11.5px; text-transform: uppercase; letter-spacing: .02em; }
+  tr:last-child td { border-bottom: none; }
+  .rank {
+    display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px;
+    border-radius: 50%; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 11px;
+  }
+  .ticker { font-weight: 700; }
+  .empty { text-align: center; color: var(--text-muted); font-size: 13.5px; padding: 30px 10px; }
+  .quarter-divider {
+    display: flex; align-items: center; gap: 10px; margin: 26px 0 12px; color: var(--text-muted); font-size: 12.5px; font-weight: 600;
+  }
+  .quarter-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+  #status, #news-status { font-size: 12.5px; color: var(--text-muted); margin-top: 6px; min-height: 16px; }
+
+  .tabs { display: flex; gap: 6px; margin-bottom: 20px; border-bottom: 1px solid var(--border); }
+  .tab-btn {
+    border: none; background: none; padding: 10px 16px; font-size: 14px; font-weight: 600;
+    color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .tab-btn.active { color: var(--accent); border-bottom-color: var(--accent); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .news-item {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 14px;
+    padding: 16px 20px; margin-bottom: 12px; box-shadow: 0 1px 2px rgba(16,24,40,0.04);
+  }
+  .news-item-header { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .news-item-header h3 { font-size: 15px; margin: 0; }
+  .news-source {
+    display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 999px;
+    background: var(--accent-soft); color: var(--accent); margin-right: 6px;
+  }
+  .news-date { font-size: 12px; color: var(--text-muted); }
+  .news-summary { font-size: 13.5px; color: var(--text); margin-top: 6px; }
+  .news-link { font-size: 12.5px; margin-top: 6px; display: inline-block; }
+  .day-divider {
+    display: flex; align-items: center; gap: 10px; margin: 22px 0 10px; color: var(--text-muted); font-size: 12.5px; font-weight: 600;
+  }
+  .day-divider::after { content: ""; flex: 1; height: 1px; background: var(--border); }
+
+  /* 나스닥 분석 탭 */
+  .summary-box {
+    background: var(--accent-soft); border-radius: 14px; padding: 16px 20px; margin-bottom: 18px; font-size: 13.8px;
+  }
+  .summary-box h2 { font-size: 15px; margin: 0 0 10px; color: var(--accent); }
+  .summary-box table { font-size: 13px; }
+  .summary-box th, .summary-box td { padding: 5px 6px; border-bottom: 1px dashed rgba(0,0,0,.08); }
+  .updated-badge { font-size: 11.5px; color: var(--text-muted); float: right; font-weight: 500; }
+
+  .split-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  @media (max-width: 700px) { .split-cols { grid-template-columns: 1fr; } }
+  .bull-card, .bear-card {
+    border-radius: 14px; padding: 16px 18px; border: 1px solid var(--border);
+  }
+  .bull-card { background: #eefcf3; border-color: #bfe8cf; }
+  .bear-card { background: #fdeeee; border-color: #f2c6c6; }
+  .bull-card h3 { color: #1f8b4d; font-size: 15px; margin: 0 0 8px; }
+  .bear-card h3 { color: #c23c3c; font-size: 15px; margin: 0 0 8px; }
+  .bull-card ul, .bear-card ul { margin: 0; padding-left: 18px; font-size: 13.3px; }
+  .bull-card li, .bear-card li { margin-bottom: 6px; }
+
+  .risk-table { width: 100%; border-collapse: collapse; font-size: 13.3px; margin-top: 8px; }
+  .risk-table th, .risk-table td { text-align: left; padding: 8px 7px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  .risk-table th { color: var(--text-muted); font-weight: 700; font-size: 11.5px; text-transform: uppercase; }
+  .sev-high { color: #c23c3c; font-weight: 700; }
+  .sev-mid { color: #b3690a; font-weight: 700; }
+
+  .action-item {
+    display: flex; gap: 10px; padding: 10px 0; border-bottom: 1px dashed var(--border); font-size: 13.5px;
+  }
+  .action-item:last-child { border-bottom: none; }
+  .action-cond { font-weight: 700; color: var(--accent); flex-shrink: 0; min-width: 92px; }
+
+  .disclaimer {
+    font-size: 12px; color: var(--text-muted); background: #fafafa; border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 14px; margin-top: 16px;
+  }
+
+  /* TOP100 리포트 탭 */
+  .card { background:var(--card-bg); border:1px solid var(--border); border-radius:14px; padding:20px 22px; margin-bottom:20px; box-shadow:0 1px 2px rgba(16,24,40,.04); }
+  .card h2 { font-size:17px; margin:0 0 10px; }
+  .card p { font-size:14px; margin:0 0 8px; color:var(--text); }
+  .card ul { margin:6px 0 0; padding-left:20px; font-size:13.8px; }
+  .card li { margin-bottom:5px; }
+  .tier-tag { display:inline-block; font-size:11.5px; font-weight:700; color:#fff; padding:2px 9px; border-radius:999px; margin-right:8px; }
+  .tier1 .tier-tag { background:#2f6fed; }
+  .tier2 .tier-tag { background:#2f9e6f; }
+  .tier3 .tier-tag { background:#c98a1f; }
+  .tier4 .tier-tag { background:#9aa0ac; }
+  .name { color:var(--text-muted); font-size:12.5px; display:block; }
+  .tier4-grid { font-size:13.5px; }
+  .tier4-grid .item { padding:6px 0; border-bottom:1px dashed var(--border); }
+  .tier4-grid .item:last-child { border-bottom:none; }
+  .tier4-grid .num { color:var(--text-muted); font-weight:700; margin-right:6px; }
+  .quote { background:var(--accent-soft); border-left:4px solid var(--accent); padding:12px 16px; border-radius:10px; font-size:13.8px; margin:10px 0; }
+  .quote b { color:var(--accent); }
+  .caveat { background:#fff8ec; border:1px solid #f0e0c0; border-radius:12px; padding:16px 18px; font-size:13.5px; color:#5c4a1f; }
+  .caveat h2 { color:#8a5a10; font-size:16px; margin-top:0; }
+  .toc { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+  .toc a { text-decoration:none; font-size:12.5px; font-weight:600; color:var(--accent); background:var(--accent-soft); padding:6px 12px; border-radius:999px; }
+  .view-badge {
+    display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px;
+    background:#f1eefc; color:#6d4fd0; margin:6px 0 0 6px;
+  }
+  .kcif-item .item-tag-dept {
+    display:inline-block; font-size:11px; font-weight:700; padding:2px 8px; border-radius:999px;
+    background:#e9f7f0; color:#1f8b4d; margin:6px 6px 0 0;
+  }
+  .refdata-table { width:100%; border-collapse:collapse; font-size:13px; }
+  .refdata-table th, .refdata-table td { text-align:left; padding:7px 8px; border-bottom:1px solid var(--border); }
+  .refdata-table th { color:var(--text-muted); font-weight:700; font-size:11px; text-transform:uppercase; background:var(--accent-soft); }
+  .refdata-table tr.hy-row { background:#f2f2f4; }
+  .refdata-table .hy-tag { display:inline-block; font-size:10px; font-weight:700; color:#b3690a; background:#fff3e0; padding:1px 6px; border-radius:999px; margin-left:6px; }
+  .refdata-cat { font-weight:700; color:var(--accent); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="badge">누적 트래커</span>
+    <h1>투자 정보 대시보드</h1>
+    <p>13F 공시, 경제 뉴스, 나스닥 리스크 분석을 한 곳에 모은 대시보드입니다. 이 브라우저/기기 기준으로 저장되며, 언제든 항목을 추가·삭제할 수 있습니다.</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" id="tab-btn-13f" onclick="switchTab('13f')">📊 13F 트래커</button>
+    <button class="tab-btn" id="tab-btn-top100" onclick="switchTab('top100')">🏆 TOP 100</button>
+    <button class="tab-btn" id="tab-btn-news" onclick="switchTab('news')">📰 경제 뉴스</button>
+    <button class="tab-btn" id="tab-btn-nasdaq" onclick="switchTab('nasdaq')">📉 나스닥 분석</button>
+    <button class="tab-btn" id="tab-btn-kcif" onclick="switchTab('kcif')">🌐 국제금융센터</button>
+    <button class="tab-btn" id="tab-btn-volume" onclick="switchTab('volume')">🔥 거래대금 TOP20</button>
+  </div>
+
+  <div class="tab-panel active" id="tab-13f">
+
+  <section class="panel">
+    <h2>➕ 새 기관 · 분기 데이터 추가</h2>
+    <div class="form-grid">
+      <div>
+        <label>기관명</label>
+        <input id="f-inst" placeholder="예: 버크셔 해서웨이" />
+      </div>
+      <div>
+        <label>분기 (정렬 기준, 예: 2026-Q2)</label>
+        <input id="f-quarter" placeholder="2026-Q2" />
+      </div>
+      <div>
+        <label>포트폴리오 규모 / 종목 수 (선택)</label>
+        <input id="f-meta" placeholder="예: $263B · 29개 종목" />
+      </div>
+      <div>
+        <label>기준일 (선택)</label>
+        <input id="f-date" placeholder="예: 2026.06.30 기준" />
+      </div>
+      <div class="full">
+        <label>매수 상위 종목 (한 줄에 하나, 형식: 티커/종목명 - 비고)</label>
+        <textarea id="f-items" placeholder="GOOGL - 보유주식수 +200% 급증&#10;GOOG - 신규 편입&#10;DAL - 신규 편입"></textarea>
+        <div class="hint">줄 순서가 곧 매수 순위입니다. " - " 로 종목과 비고를 구분해주세요 (비고는 생략 가능).</div>
+      </div>
+    </div>
+    <div class="row-actions">
+      <button class="btn" id="add-btn">추가하기</button>
+      <button class="btn secondary" id="clear-form-btn">입력 초기화</button>
+    </div>
+    <div id="status"></div>
+  </section>
+
+  <div id="list"></div>
+
+  </div><!-- /tab-13f -->
+
+  <div class="tab-panel" id="tab-top100">
+
+  <div class="toc">
+    <a href="#tldr">요약</a>
+    <a href="#findings">핵심 발견</a>
+    <a href="#tier1">티어1 (1-12위)</a>
+    <a href="#tier2">티어2 (13-40위)</a>
+    <a href="#tier3">티어3 (41-70위)</a>
+    <a href="#tier4">티어4 (71-100위)</a>
+    <a href="#streaks">기관별 연속매수 기록</a>
+    <a href="#reco">활용 가이드</a>
+    <a href="#caveat">한계점</a>
+  </div>
+
+  <section class="card" id="tldr">
+    <h2>📌 요약 (TL;DR)</h2>
+    <ul>
+      <li>AI 메가캡 그룹 — 엔비디아(NVDA), 마이크로소프트(MSFT), 아마존(AMZN), 메타(META), 알파벳(GOOGL/GOOG), 브로드컴(AVGO), TSMC(TSM) — 이 가장 많은 기관에서 가장 오래 연속 매수/증량된 종목군입니다.</li>
+      <li>단일 기관 최장 기록: 버크셔 해서웨이의 자사주 매입 — <b>24분기 연속</b> (2018.7~2024.6, 약 $780억 지출, 발행주식 약 12.5% 소각).</li>
+      <li>마켓 유명 펀드 최장 단일 종목 확신 기록: 스탠리 드러켄밀러의 나테라(NTRA) — 2022년 3분기 이후 <b>7분기 연속</b> 1위 보유 종목 (2026년 1분기 기준).</li>
+      <li>공개 데이터만으로는 "기관 전반의 연속매수 스트릭" 을 정밀 계산할 수 없어, 1~100위는 폭(보유 기관 수) + 문서화된 스트릭 + 골드만삭스 VIP 리스트를 종합한 합리적 추정치입니다. 상위 40위는 신뢰도 높음, 71~100위는 신뢰도 낮음.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="findings">
+    <h2>🔍 핵심 발견</h2>
+    <ul>
+      <li>13F는 미국 상장 롱 포지션만, 45일 지연 공시 — 공매도·대부분의 파생상품·비미국 상장 종목은 제외됩니다.</li>
+      <li>"폭(breadth)"과 "스트릭(streak)"은 다른 지표입니다. 공개 애그리게이터는 폭 측정에는 강하지만 기관별 연속분기 스트릭 측정에는 약합니다.</li>
+      <li>골드만삭스의 "헤지펀드 VIP" 바스켓(펀더멘털 헤지펀드 상위 10위 보유종목 중 최다 등장 50개 종목)이 컨센서스 확신도의 최고의 공개 지표입니다.</li>
+      <li>2020~2026년 전 기간 메가캡 테크가 지속적 컨센서스였고, 2023년 이후 AI 인프라·전력 테마가 한계적 매수의 지배적 흐름이 되었습니다.</li>
+      <li>2024~2025년 "컨센서스" 종목 중 일부(AMD, GE Vernova, Vertiv, 팔란티어 등)는 2026년 1분기 순매도로 전환 — 폭은 넓지만 스트릭 기준 순위는 낮아집니다.</li>
+    </ul>
+  </section>
+
+  <section class="card tier1" id="tier1">
+    <h2><span class="tier-tag">TIER 1</span>메가캡 컨센서스 매수 (최고 신뢰도, 1~12위)</h2>
+    <p class="quote">골드만삭스 2025년 4분기 VIP 리스트 기준(2026.2): <b>아마존이 120개 펀드</b>의 상위10위 보유종목, 메타 80개, 마이크로소프트 75개.</p>
+    <table>
+      <thead><tr><th>순위</th><th>종목</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td><span class="rank">1</span></td><td class="ticker">NVDA<span class="name">엔비디아</span></td><td>2025.12 기준 5,605개 기관 보유(Fintel 5,949 필자), 브리지워터 최대 단일보유종목, 노르웨이 국부펀드 최대 포지션(~$62.24B)</td></tr>
+        <tr><td><span class="rank">2</span></td><td class="ticker">MSFT<span class="name">마이크로소프트</span></td><td>퍼싱스퀘어 2026 1분기 신규 ~$2.1B 편입, 대부분 멀티전략 펀드 보유</td></tr>
+        <tr><td><span class="rank">3</span></td><td class="ticker">AMZN<span class="name">아마존</span></td><td>골드만 VIP 최다빈도 종목(120개 펀드), 브리지워터·테퍼 지속 매수</td></tr>
+        <tr><td><span class="rank">4</span></td><td class="ticker">META<span class="name">메타</span></td><td>80개 펀드 상위10 보유, 타이거글로벌 최대 보유종목</td></tr>
+        <tr><td><span class="rank">5</span></td><td class="ticker">GOOGL/GOOG<span class="name">알파벳</span></td><td>버크셔가 2026 1분기 보유를 거의 3배(~5,780만주, ~$166억)로 확대, 2025 3분기부터 시작된 캠페인</td></tr>
+        <tr><td><span class="rank">6</span></td><td class="ticker">AVGO<span class="name">브로드컴</span></td><td>AI '인프라' 짝꿍 종목, 꾸준한 다분기 매수</td></tr>
+        <tr><td><span class="rank">7</span></td><td class="ticker">TSM<span class="name">TSMC</span></td><td>타이거글로벌 2026 1분기 최대 매수(+~$622M), 브리지워터 신규 편입, 코튜 2025 1분기 대규모 베팅</td></tr>
+        <tr><td><span class="rank">8</span></td><td class="ticker">AAPL<span class="name">애플</span></td><td>버크셔 최대 보유종목(~$578억, 2026 1분기)</td></tr>
+        <tr><td><span class="rank">9</span></td><td class="ticker">LLY<span class="name">일라이릴리</span></td><td>GLP-1/비만치료제 메가캡, 헬스케어 지속 매수</td></tr>
+        <tr><td><span class="rank">10</span></td><td class="ticker">V<span class="name">비자</span></td><td>골드만 VIP 상위5 결제업종 상시 종목</td></tr>
+        <tr><td><span class="rank">11</span></td><td class="ticker">MA<span class="name">마스터카드</span></td><td>2026 1분기 157개 헤지펀드 보유</td></tr>
+        <tr><td><span class="rank">12</span></td><td class="ticker">NFLX<span class="name">넷플릭스</span></td><td>타이거글로벌 2025 3분기 최대 매수</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card tier2" id="tier2">
+    <h2><span class="tier-tag">TIER 2</span>강한 다기관 매수 (높음/중간 신뢰도, 13~40위)</h2>
+    <table>
+      <thead><tr><th>순위</th><th>종목</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td><span class="rank">13</span></td><td class="ticker">UBER<span class="name">우버</span></td><td>애크먼(퍼싱스퀘어) 2025 1분기 신규, 테퍼 2026 1분기 지분 3배 이상 확대</td></tr>
+        <tr><td><span class="rank">14</span></td><td class="ticker">BRK.B<span class="name">버크셔 해서웨이</span></td><td>타 펀드의 저변동 분산 보유종목</td></tr>
+        <tr><td><span class="rank">15</span></td><td class="ticker">SPOT<span class="name">스포티파이</span></td><td>베일리기포드 상위5, JDP캐피탈 2년간 최대 보유종목</td></tr>
+        <tr><td><span class="rank">16</span></td><td class="ticker">MELI<span class="name">메르카도리브레</span></td><td>베일리기포드 전 기간 상위2~3위 유지</td></tr>
+        <tr><td><span class="rank">17</span></td><td class="ticker">NU<span class="name">누 홀딩스</span></td><td>베일리기포드 2대 주주(~2.57억주), 타이거컵 71.4% 보유(2026 1분기)</td></tr>
+        <tr><td><span class="rank">18</span></td><td class="ticker">NOW<span class="name">서비스나우</span></td><td>추적 16개 펀드 중 11개 매수·0개 매도(단일분기 최강 확신 신호)</td></tr>
+        <tr><td><span class="rank">19</span></td><td class="ticker">MU<span class="name">마이크론</span></td><td>테퍼 2025 4분기~2026 1분기 지분 3배 확대</td></tr>
+        <tr><td><span class="rank">20</span></td><td class="ticker">VST<span class="name">비스트라</span></td><td>AI전력 컨센서스, 2024 3분기 97개 펀드</td></tr>
+        <tr><td><span class="rank">21</span></td><td class="ticker">CEG<span class="name">컨스텔레이션 에너지</span></td><td>~2,061개 기관 보유, 코튜 2024 1분기 신규</td></tr>
+        <tr><td><span class="rank">22</span></td><td class="ticker">PLTR<span class="name">팔란티어</span></td><td>650개+ 헤지펀드, 시타델 최대 보유(~$4.3B) — 단 2026 1분기 총보유주식 -9.8%</td></tr>
+        <tr><td><span class="rank">23</span></td><td class="ticker">CPNG<span class="name">쿠팡</span></td><td>드러켄밀러 2021년 이후 핵심 보유, 타이거글로벌 증량</td></tr>
+        <tr><td><span class="rank">24</span></td><td class="ticker">SE<span class="name">씨 리미티드</span></td><td>타이거글로벌 2위 보유(2025 3분기), 드러켄밀러 증량</td></tr>
+        <tr><td><span class="rank">25</span></td><td class="ticker">GEV<span class="name">GE 버노바</span></td><td>~2,499개 펀드, AI전력화 선호종목</td></tr>
+        <tr><td><span class="rank">26</span></td><td class="ticker">MRVL<span class="name">마벨</span></td><td>2024 4분기 광범위 매수(인베스코, 웰링턴, 노르웨이 신규)</td></tr>
+        <tr><td><span class="rank">27</span></td><td class="ticker">CRM<span class="name">세일즈포스</span></td><td>엔터프라이즈 SW 전반 매수 (단 브리지워터·베일리기포드 2026 1분기 청산)</td></tr>
+        <tr><td><span class="rank">28</span></td><td class="ticker">COHR<span class="name">코히런트</span></td><td>드러켄밀러 상위3, 5~6분기 연속(2024초~2025 2분기)</td></tr>
+        <tr><td><span class="rank">29</span></td><td class="ticker">VRT<span class="name">버티브</span></td><td>AI 데이터센터 인프라, 약 90% 기관 보유</td></tr>
+        <tr><td><span class="rank">30</span></td><td class="ticker">AMD<span class="name">AMD</span></td><td>높은 보유폭이나 2025 초 순매도, 브리지워터는 2024 매수</td></tr>
+        <tr><td><span class="rank">31</span></td><td class="ticker">NTRA<span class="name">나테라</span></td><td>드러켄밀러 <b>7분기 연속</b> 1위 보유(2022 3분기~), 골드만 VIP 12개 펀드</td></tr>
+        <tr><td><span class="rank">32</span></td><td class="ticker">BABA<span class="name">알리바바</span></td><td>테퍼 다분기 연속 최대 보유(2023~2025) 후 청산 진행</td></tr>
+        <tr><td><span class="rank">33</span></td><td class="ticker">RDDT<span class="name">레딧</span></td><td>487개 헤지펀드, 코튜·타이거글로벌·D1 보유</td></tr>
+        <tr><td><span class="rank">34</span></td><td class="ticker">TLN<span class="name">탈렌 에너지</span></td><td>오크트리(하워드 막스) 2023 3분기부터 보유, 재매수 중</td></tr>
+        <tr><td><span class="rank">35</span></td><td class="ticker">APO<span class="name">아폴로 글로벌</span></td><td>골드만 VIP 상위20 대체자산 종목</td></tr>
+        <tr><td><span class="rank">36</span></td><td class="ticker">SHOP<span class="name">쇼피파이</span></td><td>2025 4분기 단일분기 5개 펀드 신규 편입</td></tr>
+        <tr><td><span class="rank">37</span></td><td class="ticker">BKNG<span class="name">부킹홀딩스</span></td><td>브리지워터 상위10, 골드만 VIP 상시종목</td></tr>
+        <tr><td><span class="rank">38</span></td><td class="ticker">PGR<span class="name">프로그레시브</span></td><td>골드만 VIP 보험업종 종목</td></tr>
+        <tr><td><span class="rank">39</span></td><td class="ticker">JPM<span class="name">JP모건체이스</span></td><td>금융업 로테이션 메가캡, 멀티전략 상시 보유</td></tr>
+        <tr><td><span class="rank">40</span></td><td class="ticker">HOOD<span class="name">로빈후드</span></td><td>2025 핀테크 급부상 종목, 브리지워터 2025 3분기 신규</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card tier3" id="tier3">
+    <h2><span class="tier-tag">TIER 3</span>중간 신뢰도, 골드만 VIP + 테마주 위주 (41~70위)</h2>
+    <table>
+      <thead><tr><th>순위</th><th>종목</th><th>비고</th></tr></thead>
+      <tbody>
+        <tr><td><span class="rank">41</span></td><td class="ticker">HES<span class="name">헤스</span></td><td>골드만 VIP 상위10 (21개 펀드), M&A/에너지 관심</td></tr>
+        <tr><td><span class="rank">42</span></td><td class="ticker">NRG<span class="name">NRG 에너지</span></td><td>AI전력 보조종목</td></tr>
+        <tr><td><span class="rank">43</span></td><td class="ticker">FLUT<span class="name">플러터 엔터테인먼트</span></td><td>골드만 VIP (15개 펀드)</td></tr>
+        <tr><td><span class="rank">44</span></td><td class="ticker">CVNA<span class="name">카바나</span></td><td>골드만 VIP (12개 펀드), 2024~2025 턴어라운드 선호종목</td></tr>
+        <tr><td><span class="rank">45</span></td><td class="ticker">APP<span class="name">앱러빈</span></td><td>골드만 VIP (11개 펀드), 2024~2025 모멘텀 종목</td></tr>
+        <tr><td><span class="rank">46</span></td><td class="ticker">PYPL<span class="name">페이팔</span></td><td>골드만 VIP (11개 펀드), 브리지워터 매수</td></tr>
+        <tr><td><span class="rank">47</span></td><td class="ticker">COIN<span class="name">코인베이스</span></td><td>암호화폐 사이클 컨센서스, 멜카트 신규</td></tr>
+        <tr><td><span class="rank">48</span></td><td class="ticker">LRCX<span class="name">램리서치</span></td><td>반도체 장비, 브리지워터 2배 이상 증량(2025 3분기)</td></tr>
+        <tr><td><span class="rank">49</span></td><td class="ticker">AMAT<span class="name">어플라이드 머티리얼즈</span></td><td>브리지워터 신규(2025 3분기), 타이거글로벌 +$260M(2026 1분기)</td></tr>
+        <tr><td><span class="rank">50</span></td><td class="ticker">ET<span class="name">에너지 트랜스퍼</span></td><td>골드만 VIP (11개 펀드), 미드스트림 에너지</td></tr>
+        <tr><td><span class="rank">51</span></td><td class="ticker">EQT<span class="name">EQT 코퍼레이션</span></td><td>골드만 VIP (11개 펀드), 천연가스</td></tr>
+        <tr><td><span class="rank">52</span></td><td class="ticker">DFS<span class="name">디스커버 파이낸셜</span></td><td>골드만 VIP (11개 펀드), 캐피탈원 합병 관련</td></tr>
+        <tr><td><span class="rank">53</span></td><td class="ticker">TEVA<span class="name">테바 제약</span></td><td>골드만 VIP (11개 펀드), 드러켄밀러 단일분기 +65%</td></tr>
+        <tr><td><span class="rank">54</span></td><td class="ticker">EXPE<span class="name">익스피디아</span></td><td>골드만 VIP (12개 펀드)</td></tr>
+        <tr><td><span class="rank">55</span></td><td class="ticker">INSM<span class="name">인스메드</span></td><td>골드만 VIP (12개 펀드), 바이오텍</td></tr>
+        <tr><td><span class="rank">56</span></td><td class="ticker">EDR<span class="name">엔데버 그룹</span></td><td>골드만 VIP (12개 펀드)</td></tr>
+        <tr><td><span class="rank">57</span></td><td class="ticker">GE<span class="name">GE 에어로스페이스</span></td><td>퀀트·펀더멘털 매니저 모두 증량(2025 4분기)</td></tr>
+        <tr><td><span class="rank">58</span></td><td class="ticker">FI<span class="name">파이서브</span></td><td>골드만 VIP (10개 펀드)</td></tr>
+        <tr><td><span class="rank">59</span></td><td class="ticker">CORZ<span class="name">코어 사이언티픽</span></td><td>골드만 VIP (10개 펀드), AI/암호화폐 컴퓨팅</td></tr>
+        <tr><td><span class="rank">60</span></td><td class="ticker">PDD<span class="name">핀둬둬</span></td><td>베일리기포드 2023 매수, 이후 엇갈림(버리 약세 전환)</td></tr>
+        <tr><td><span class="rank">61</span></td><td class="ticker">WDAY<span class="name">워크데이</span></td><td>골드만 VIP 신규 편입, 엔터프라이즈 SW</td></tr>
+        <tr><td><span class="rank">62</span></td><td class="ticker">DAL<span class="name">델타항공</span></td><td>골드만 VIP 신규 편입, 버크셔 2026 1분기 신규</td></tr>
+        <tr><td><span class="rank">63</span></td><td class="ticker">PFE<span class="name">화이자</span></td><td>골드만 VIP 역발상 헬스케어 편입</td></tr>
+        <tr><td><span class="rank">64</span></td><td class="ticker">AJG<span class="name">아서 J 갤러거</span></td><td>골드만 VIP 편입, 보험</td></tr>
+        <tr><td><span class="rank">65</span></td><td class="ticker">COF<span class="name">캐피탈원</span></td><td>타이거컵 컨센서스, 골드만 VIP</td></tr>
+        <tr><td><span class="rank">66</span></td><td class="ticker">WFC<span class="name">웰스파고</span></td><td>골드만 "12개 공유종목" 리스트</td></tr>
+        <tr><td><span class="rank">67</span></td><td class="ticker">KLAC<span class="name">KLA 코퍼레이션</span></td><td>브리지워터 매수(2024), 반도체장비</td></tr>
+        <tr><td><span class="rank">68</span></td><td class="ticker">QCOM<span class="name">퀄컴</span></td><td>코튜 2024 1분기 신규</td></tr>
+        <tr><td><span class="rank">69</span></td><td class="ticker">DELL<span class="name">델 테크놀로지스</span></td><td>코튜 2024 1분기 신규, AI 서버</td></tr>
+        <tr><td><span class="rank">70</span></td><td class="ticker">GRAB<span class="name">그랩 홀딩스</span></td><td>베일리기포드 2024 2분기 신규</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section class="card tier4" id="tier4">
+    <h2><span class="tier-tag">TIER 4</span>낮은 신뢰도, 단일소스/폭 위주 (71~100위)</h2>
+    <p style="font-size:13px;color:var(--text-muted);">아래는 단일 분기 매수 데이터, 골드만 VIP 하위권, 혹은 특정 유명 펀드 1곳의 데이터만으로 뒷받침됩니다. 연속매수 스트릭은 추정치입니다.</p>
+    <div class="tier4-grid">
+      <div class="item"><span class="num">71</span><b>CRH</b> CRH plc — 골드만 VIP(15개 펀드)</div>
+      <div class="item"><span class="num">72</span><b>K</b> 켈로그(켈라노바) — 골드만 VIP(15개 펀드, 인수 관련)</div>
+      <div class="item"><span class="num">73</span><b>LBRDK</b> 리버티 브로드밴드 — 골드만 VIP(15개 펀드)</div>
+      <div class="item"><span class="num">74</span><b>SMAR</b> 스마트시트 — 골드만 VIP(14개 펀드)</div>
+      <div class="item"><span class="num">75</span><b>ACI</b> 알버트슨스 — 골드만 VIP(11개 펀드)</div>
+      <div class="item"><span class="num">76</span><b>ANSS</b> 앤시스 — 골드만 VIP(11개 펀드, 인수 관련)</div>
+      <div class="item"><span class="num">77</span><b>HCP</b> 해시코프 — 골드만 VIP(11개 펀드)</div>
+      <div class="item"><span class="num">78</span><b>JNPR</b> 주니퍼 네트웍스 — 골드만 VIP(9개 펀드, 인수 관련)</div>
+      <div class="item"><span class="num">79</span><b>OKLO</b> 오클로 — 701개 기관, SMR 소형원자로</div>
+      <div class="item"><span class="num">80</span><b>SMR</b> 뉴스케일 — 2025년 순매수 증가</div>
+      <div class="item"><span class="num">81</span><b>FIGR</b> 피규어 테크놀로지 — 드러켄밀러·소로스·타이거 2025 3분기 IPO 매수</div>
+      <div class="item"><span class="num">82</span><b>KLAR</b> 클라르나 — 타이거글로벌 2025 3분기 신규</div>
+      <div class="item"><span class="num">83</span><b>FIG</b> 피그마 — 타이거글로벌 2025 3분기 신규</div>
+      <div class="item"><span class="num">84</span><b>NTSK</b> 넷스코프 — 타이거글로벌 2025 3분기 신규</div>
+      <div class="item"><span class="num">85</span><b>CYBR</b> 사이버아크 — 멜카트 상위3</div>
+      <div class="item"><span class="num">86</span><b>SNPS</b> 시놉시스 — 멜카트 2위 보유</div>
+      <div class="item"><span class="num">87</span><b>ZS</b> 지스케일러 — 타이거글로벌 증량(2024 4분기)</div>
+      <div class="item"><span class="num">88</span><b>MDB</b> 몽고DB — 타이거글로벌 대량 매수(2025 3분기)</div>
+      <div class="item"><span class="num">89</span><b>NET</b> 클라우드플레어 — 베일리기포드 상위5, 드러켄밀러 신규(2026 1분기)</div>
+      <div class="item"><span class="num">90</span><b>LCID</b> 루시드 모터스 — 사우디 PIF 최대 보유</div>
+      <div class="item"><span class="num">91</span><b>EA</b> 일렉트로닉 아츠 — 사우디 PIF 상위3</div>
+      <div class="item"><span class="num">92</span><b>ELF</b> e.l.f. 뷰티 — 베일리기포드 신규(2024 2분기)</div>
+      <div class="item"><span class="num">93</span><b>TWLO</b> 트윌리오 — 드러켄밀러 신규(2026 1분기)</div>
+      <div class="item"><span class="num">94</span><b>INTC</b> 인텔 — 드러켄밀러 신규(2026 1분기)</div>
+      <div class="item"><span class="num">95</span><b>SNDK</b> 샌디스크 — 테퍼·드러켄밀러 신규(2026 1분기, AI 메모리)</div>
+      <div class="item"><span class="num">96</span><b>WWD</b> 우드워드 — 드러켄밀러 다분기 항공우주 보유</div>
+      <div class="item"><span class="num">97</span><b>STX</b> 시게이트 — 드러켄밀러 다분기 보유</div>
+      <div class="item"><span class="num">98</span><b>YPF</b> YPF 소시에다드 — 드러켄밀러 신규(2026 1분기)</div>
+      <div class="item"><span class="num">99</span><b>STM</b> ST마이크로일렉트로닉스 — 드러켄밀러 신규(2026 1분기)</div>
+      <div class="item"><span class="num">100</span><b>CMG</b> 치폴레 — 퍼싱스퀘어(애크먼) 장기 행동주의 보유</div>
+    </div>
+  </section>
+
+  <section class="card" id="streaks">
+    <h2>📈 기관별 문서화된 연속 매수 기록 (핵심 근거)</h2>
+    <ul>
+      <li><b>버크셔 해서웨이 자사주(BRK.A/B):</b> <b>24분기 연속</b> 자사주 매입 — 2018.7.17~2024.6.30, 약 6년간 약 $780억 지출, 발행주식 약 12.5% 소각. 2026 1분기 그렉 아벨 체제에서 ~$234M 규모로 재개.</li>
+      <li><b>버크셔 순매수/매도:</b> 그렉 아벨이 2026 1분기 13분기 연속 순매도 흐름을 깨뜨림(현금흐름 공시 기준).</li>
+      <li><b>버크셔 / 옥시덴탈 페트롤리엄(OXY):</b> 2022 1분기부터 처음부터 구축, 2025년 초까지 여러 분기 지속 매수(2.55억주 이상).</li>
+      <li><b>드러켄밀러 / 나테라(NTRA):</b> 2026 1분기까지 <b>7분기 연속</b> 1위 보유종목(2022 3분기부터). 2022 3분기 최초 매수 이후 354% 수익률. 듀케인 2026 1분기 13F($34억, 68개 종목) 기준 NTRA 비중 18.1%.</li>
+      <li><b>테퍼 / 알리바바(BABA):</b> 2023~2025년 다분기 연속 최대 보유종목이었다가 이후 청산(2025년 지분 약 57% 매도).</li>
+      <li><b>드러켄밀러 / 쿠팡(CPNG):</b> 2021년 이후 핵심 보유종목.</li>
+      <li><b>JDP캐피탈 / 스포티파이(SPOT):</b> "지난 2년간" 최대 보유종목.</li>
+      <li><b>베일리기포드 / 누홀딩스, 메르카도리브레, 스포티파이:</b> 전 기간 상위5위 보유종목 유지.</li>
+    </ul>
+  </section>
+
+  <section class="card" id="reco">
+    <h2>💡 활용 가이드</h2>
+    <ul>
+      <li><b>컨센서스 확신 워치리스트</b>로는 티어1(1~12위)을 기준으로 삼으세요. 가장 신뢰도 높고 폭넓고 오래 매수됐지만, 그만큼 가장 붐비는 종목이라 진입 신호가 아닌 심리 지표로 활용하는 게 안전합니다.</li>
+      <li><b>실제 스트릭을 추적하려면</b> WhaleWisdom·Fintel의 히스토리 테이블, GuruFocus 구루 페이지, Seeking Alpha의 "Tracking [펀드명] 13F" 시리즈를 활용해 펀드×종목×분기 매트릭스를 직접 만들고 동일 펀드가 3분기 이상 연속 증량한 종목을 표시하세요. 우선 검증 대상: NTRA(드러켄밀러), NU/MELI/SPOT(베일리기포드), BABA→AMZN(테퍼), SE/CPNG(타이거글로벌).</li>
+      <li><b>순위를 바꿀 임계값:</b> (1) 어떤 종목이 2분기 연속 기관 순매도로 전환되면(AMD, GEV, VRT, PLTR처럼) 상위30위에서 강등. (2) 2026년 2분기 13F 공개(2026.8.14 이후) 시 재평가 필요 — AI전력·반도체 하위권(19~26위, 48~49위)이 가장 변동성 큼. (3) 골드만 다음 VIP 바스켓에서 "25개+ 펀드 상위10 보유" 기준 이하로 떨어지면 티어 하향.</li>
+      <li>애크먼/치폴레, 버리 종목 같은 <b>행동주의·단일매니저 포지션은 그대로 따라 하지 마세요</b> — 촉매·레버리지·투자기간이 개인투자자와 다르고, 버리는 평균 보유기간이 약 1분기라 스트릭 신호로 거의 의미가 없습니다.</li>
+    </ul>
+  </section>
+
+  <section class="caveat" id="caveat">
+    <h2>⚠️ 한계점 (반드시 참고)</h2>
+    <ul>
+      <li>공개 무료 데이터만으로는 "수십 개 기관 전체의 연속분기 매수 스트릭"을 정밀 검증한 #1~#100 순위를 만들 수 없습니다. 어떤 공개 애그리게이터도 기관 간 연속 스트릭 점수를 계산해 제공하지 않습니다. 이 순위는 폭·문서화된 스트릭·VIP 리스트를 조합한 합리적 추정치이며, 특히 41~100위는 단일 지표가 아닌 여러 근거를 혼합한 것입니다.</li>
+      <li><b>13F의 구조적 한계:</b> 45일 지연 공시, 미국 상장 롱 포지션만 해당, 공매도·대부분 파생상품·해외상장 종목 제외. 한 펀드가 어떤 종목을 롱으로 보유하면서 다른 곳에서 헤지 숏을 잡을 수도 있음. 옵션 비중이 큰 필자(버리, 사우디 PIF)는 보유 데이터가 왜곡될 수 있음.</li>
+      <li><b>폭 ≠ 확신:</b> 블랙록·뱅가드·스테이트스트리트·노르웨이 국부펀드는 인덱스 사유로 거의 모든 종목을 보유 — 이들의 "증량"은 액티브 확신이 아니라 인덱스 비중 추종이라 보유폭 수치를 부풀립니다.</li>
+      <li><b>최근 편향:</b> 2023~2026년 AI 인프라/전력 테마가 2020~2022년 매수(팬데믹 시대 줌, 페이팔, 로쿠, 텔라닥 등, 이후 대부분 처분)에 비해 과대대표됩니다. 2020~2021년 대량 매수 후 처분된 종목은 이 기준(지속 스트릭 보상)상 설계적으로 상위권에 들지 않습니다.</li>
+      <li><b>데이터 충돌:</b> 일부 애그리게이터의 "전량 매도" 표기는 실제 청산이 아니라 필링/데이터 오류일 수 있음(노르웨이 국부펀드 사례에서 발견). 소스 충돌 시 자동 애그리게이터보다 개별 펀드 공시(Hedge Vision, GuruFocus, SEC 공시)를 우선했습니다. 널리 퍼진 "NVDA 기관보유자 7,386개" 수치는 검증되지 않았고, 더 신뢰도 높은 수치는 5,605개(Business Quant, 2025.12) 또는 총 필자 5,949개(Fintel)입니다.</li>
+    </ul>
+  </section>
+
+  <footer>
+    출처: WhaleWisdom·Fintel·GuruFocus·SEC EDGAR·Goldman Sachs Hedge Fund VIP 바스켓, Reuters/Bloomberg/CNBC/Barron's 등 다수 매체 및 Hedge Vision·Seeking Alpha "Tracking" 시리즈 종합 · 2026.7 리서치 기준 · 투자 조언이 아니며 정보 제공 목적입니다.
+  </footer>
+
+  </div><!-- /tab-top100 -->
+
+  <div class="tab-panel" id="tab-news">
+
+  <section class="panel">
+    <h2>➕ 경제 뉴스 항목 추가</h2>
+    <div class="form-grid">
+      <div>
+        <label>제목</label>
+        <input id="n-title" placeholder="예: 연준, 기준금리 동결 발표" />
+      </div>
+      <div>
+        <label>출처 (트위터/텔레그램/언론사 등)</label>
+        <input id="n-source" placeholder="예: 로이터 / 텔레그램 채널명 / X" />
+      </div>
+      <div>
+        <label>날짜</label>
+        <input id="n-date" placeholder="예: 2026-07-23" />
+      </div>
+      <div>
+        <label>링크 (선택)</label>
+        <input id="n-url" placeholder="https://..." />
+      </div>
+      <div class="full">
+        <label>요약</label>
+        <textarea id="n-summary" placeholder="핵심 내용을 2~3줄로 요약"></textarea>
+      </div>
+    </div>
+    <div class="row-actions">
+      <button class="btn" id="news-add-btn">추가하기</button>
+      <button class="btn secondary" id="news-clear-btn">입력 초기화</button>
+    </div>
+    <div id="news-status"></div>
+    <div class="hint" style="margin-top:10px;">💡 매일 Claude가 검색해서 채팅으로 전달하는 뉴스 목록을 여기에 붙여넣기만 하면 계속 쌓입니다.</div>
+  </section>
+
+  <section class="panel">
+    <h2>🔎 키워드로 검색</h2>
+    <input id="news-filter" placeholder="예: 하이닉스, 금리, 반도체 (제목/출처/요약 전체 검색)" oninput="filterNews()"
+      style="width:100%; padding:9px 12px; border:1px solid var(--border); border-radius:8px; font-size:14px; font-family:inherit;" />
+    <div class="hint" id="news-filter-empty" style="display:none; margin-top:8px;">입력하신 단어를 포함한 뉴스가 없습니다.</div>
+  </section>
+
+  <div id="news-list"></div>
+
+  </div><!-- /tab-news -->
+
+  <div class="tab-panel" id="tab-nasdaq">
+
+  <div class="summary-box">
+    <span class="updated-badge">최종 업데이트: 2026-07-23</span>
+    <h2>📌 투자 핵심 요약 (Investment Summary)</h2>
+    <table>
+      <tr><th>구분</th><th>내용</th></tr>
+      <tr><td>현재 국면</td><td>사상 최고권 근접 후 조정 — AI 밸류에이션 재평가 국면</td></tr>
+      <tr><td>나스닥종합 최근 범위</td><td>52주 20,560 ~ 27,190 / 최근 25,700~26,200대 등락</td></tr>
+      <tr><td>2026년 누적 수익률</td><td>+14.7% (연초 대비, 조정 이후 재상승 흐름)</td></tr>
+      <tr><td>주요 관전 레벨(나스닥100 선물)</td><td>상방 돌파 30,400 / 하방 붕괴 26,000</td></tr>
+      <tr><td>변동성(VIX)</td><td>약 16.6pt — 역사적으로 낮은 편(시장 안도 구간, 역발상 경계 필요)</td></tr>
+      <tr><td>Fed 기준금리</td><td>3.50~3.75% 동결(2026.6) / 다음 FOMC 7.28~29, 결과 발표 7.30 03:00 KST</td></tr>
+      <tr><td>최대 하방 트리거</td><td>AI 데이터센터 ROI 회의론 확산 + 빅테크 CAPEX 가이던스 실망</td></tr>
+      <tr><td>최대 상방 트리거</td><td>메모리(D램/HBM) 공급부족 구조적 지속 + 빅테크 실적시즌 서프라이즈</td></tr>
+    </table>
+  </div>
+
+  <section class="panel">
+    <h2>1️⃣ 매크로 및 이슈 스캐닝</h2>
+    <ul style="font-size:13.5px; padding-left:20px; margin:0;">
+      <li><b>통화정책:</b> 연준은 2026년 6월 FOMC에서 기준금리를 3.50~3.75%로 동결. 위원들 간 인플레이션 상방 위험 vs 인상 필요성 견해 엇갈림. 다음 회의는 7월 28~29일, 결과는 7월 30일 새벽 3시(KST) 발표.</li>
+      <li><b>7월 매크로 캘린더:</b> 비농업고용(7/2), CPI(7/14), PPI(7/15) 발표 이미 소화, FOMC(7/28~29)가 최대 변수로 남음.</li>
+      <li><b>AI/반도체 밸류에이션 재평가:</b> 7월 중순 메모리·AI 하드웨어 체인에서 차익실현 매물 급증 — 마이크론·AMD 각 -5%, 샌디스크 -12%, 브로드컴 -5%, SK하이닉스 미 상장 주식 -13% 급락 세션 발생. AI 데이터센터 투자 대비 수익성(ROI)에 대한 의문이 핵심 트리거.</li>
+      <li><b>개별 기업 리스크:</b> 넷플릭스 3분기 가이던스 부진으로 시간외 -9~11%, 알파벳은 최신 AI모델(제미니 3.5 프로) 출시 연기 소식에 -4%대 하락. 반면 유나이티드헬스는 실적 서프라이즈 및 가이던스 상향.</li>
+      <li><b>지정학/원자재:</b> 중동(이란 관련) 긴장 고조와 유가 급등이 인플레이션 우려 재점화. 트럼프 행정부의 대이란 제재·관세 결정이 임박한 변수로 대기 중.</li>
+      <li><b>구조적 강세 재료:</b> 모건스탠리 등은 AI 데이터센터發 메모리 공급부족이 2028년까지 심화될 것으로 전망 — D램 현물가가 연일 최고가 경신 중이며, 이는 메모리 제조사 실적에 구조적으로 우호적.</li>
+      <li><b>계절성:</b> 나스닥·S&P500 모두 7월은 통계적으로 강세 확률이 높은 구간이나, 올해는 빅테크 실적시즌과 CAPEX 가이던스가 계절성을 압도할 변수.</li>
+    </ul>
+  </section>
+
+  <section class="panel">
+    <h2>2️⃣ 상방(Bull) / 하방(Bear) 시나리오</h2>
+    <div class="split-cols">
+      <div class="bull-card">
+        <h3>🐂 Bull Case</h3>
+        <ul>
+          <li>7월 28~29일 FOMC에서 완화적(dovish) 톤 확인 시 유동성 랠리 재개</li>
+          <li>빅테크(메타·MSFT·알파벳) 실적시즌에서 CAPEX 가이던스 상향 지속 확인</li>
+          <li>메모리(D램/HBM) 공급부족 장기화로 반도체 업종 이익 전망 상향</li>
+          <li>계절성(7월 강세 패턴)과 저VIX 환경에서 매수세 복귀</li>
+          <li>나스닥100 선물 기준 30,400 상향 돌파 시 추세적 신고가 랠리 가능</li>
+        </ul>
+      </div>
+      <div class="bear-card">
+        <h3>🐻 Bear Case</h3>
+        <ul>
+          <li>AI 데이터센터 ROI 회의론이 실적시즌 가이던스 실망으로 현실화</li>
+          <li>중동 지정학 리스크 확산 → 유가 급등 → 인플레이션 재점화 → 매파적 연준 신호</li>
+          <li>메모리·반도체 밸류에이션 부담에 따른 추가 차익실현 매물 확대(7월 중순 재현)</li>
+          <li>빅테크 개별 리스크(모델 출시 지연, 가입자 성장 둔화 등) 연쇄 확산</li>
+          <li>나스닥100 선물 26,000 붕괴 시 기술적 조정 국면 진입 가능</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>3️⃣ 리스크 평가 및 손익비(Risk/Reward)</h2>
+    <table class="risk-table">
+      <thead><tr><th>리스크 요인</th><th>심각도</th><th>설명 및 관리 기준</th></tr></thead>
+      <tbody>
+        <tr><td>밸류에이션(AI/반도체)</td><td class="sev-high">높음</td><td>7월 중순 -5~13% 급락 세션 전례. 개별 종목 비중이 포트폴리오의 특정 임계치(예: 15~20%)를 넘으면 초과분 축소 검토.</td></tr>
+        <tr><td>연준 정책(FOMC 7/28~29)</td><td class="sev-high">높음</td><td>발표 전후 변동성 확대 구간. 발표 D-1~D+1은 신규 진입 최소화, 기존 포지션은 손절선 명확화 후 유지.</td></tr>
+        <tr><td>지정학(중동/유가)</td><td class="sev-mid">중간</td><td>유가 급등 시 인플레이션 헤지(원자재·가치주) 비중 일부 배분 고려.</td></tr>
+        <tr><td>개별 빅테크 실적</td><td class="sev-mid">중간</td><td>실적 발표 전 단일 종목 집중도 축소, 발표 후 갭 대응은 분할 접근.</td></tr>
+        <tr><td>계절성 대비 역행 리스크</td><td class="sev-mid">중간</td><td>저VIX(16pt대)는 안도 구간이나 역사적으로 안일한 시장에서 변동성 스파이크 전례 다수 — 추격매수 자제.</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:13.3px; margin-top:10px;">
+      <b>접근 가능 구간(참고):</b> 나스닥100 선물 26,000~30,400 박스권 상단/하단을 리스크 관리 기준선으로 설정. 상단 돌파 시 추세추종, 하단 이탈 시 방어적 비중 축소가 합리적인 대응 축.<br>
+      <b>손절/비중 조절 기준(예시 프레임):</b> 개별 포지션 -8~10% 손실 시 1차 축소, 지수 기준 박스권 하단(26,000) 종가 이탈 시 전체 위험자산 비중 단계적 축소 검토.
+    </p>
+  </section>
+
+  <section class="panel">
+    <h2>4️⃣ 판단 및 조건부 대응 전략 (If-Then Action Plan)</h2>
+    <div class="action-item"><span class="action-cond">IF 완화적 FOMC</span><span>→ 기존 성장주 비중 유지, 조정 시 분할 매수 검토 (특히 메모리/AI인프라 밸류체인)</span></div>
+    <div class="action-item"><span class="action-cond">IF 매파적 FOMC</span><span>→ 신규 진입 보류, 고밸류에이션 종목 비중 우선 축소, 현금/단기채 비중 확대</span></div>
+    <div class="action-item"><span class="action-cond">IF 26,000 이탈</span><span>→ 기술적 조정 국면으로 판단, 위험자산 비중 단계적 축소·손절 라인 준수</span></div>
+    <div class="action-item"><span class="action-cond">IF 30,400 돌파</span><span>→ 추세 추종 관점 유효, 단 밸류에이션 부담 구간 진입 시 트레일링 스탑 병행</span></div>
+    <div class="action-item"><span class="action-cond">IF 유가 급등 지속</span><span>→ 인플레이션 헤지 자산(에너지·원자재) 일부 배분, 성장주 듀레이션 리스크 점검</span></div>
+    <div class="action-item"><span class="action-cond">IF 빅테크 실적 서프라이즈</span><span>→ CAPEX 가이던스 방향에 따라 반도체·메모리 밸류체인 비중 재조정</span></div>
+    <div class="disclaimer">
+      본 분석은 공개된 시장 데이터·언론 보도·애널리스트 리포트를 종합한 정보 제공 목적이며, 투자 자문이 아닙니다. Claude는 투자 자문가가 아니며, 실제 투자 판단은 본인의 리스크 허용 범위에 맞춰 신중히 내리시기 바랍니다.
+    </div>
+  </section>
+
+  </div><!-- /tab-nasdaq -->
+
+  <div class="tab-panel" id="tab-kcif">
+
+  <div class="note" style="background:#fff8ec; border:1px solid #f0e0c0; border-radius:12px; padding:14px 18px; font-size:13px; color:#5c4a1f; margin-bottom:20px;">
+    ⚠️ 국제금융센터(KCIF)의 보고서 전문은 유료회원 전용이며, 아래는 공개된 목록 페이지에서 확인 가능한 제목·요약·발간일·조회수만 정리한 것입니다. 전문은 원문 링크(목록 페이지)에서 로그인 후 확인하실 수 있습니다.
+  </div>
+
+  <section class="panel">
+    <h2>🌐 국제금융센터(KCIF) 최근 발간 자료</h2>
+    <p class="hint" style="margin-bottom:12px;">국제금융속보·국제금융·세계경제·지표 카테고리에서 최근 발간된 자료 (2026-07-24 기준 확인)</p>
+
+    <div class="news-item kcif-item">
+      <div class="news-item-header">
+        <h3>[7.24] 미국, 對이란 대규모 작전 재개 검토. 유가 100달러 돌파하고 국채금리도 상승 등</h3>
+        <span class="news-date">2026-07-24</span>
+      </div>
+      <div><span class="item-tag-dept">국제금융속보</span><span class="view-badge">조회 395</span></div>
+      <div class="news-summary">해외동향부 작성. 중동 지정학 리스크가 재차 격화되며 유가가 배럴당 100달러를 돌파, 미 국채금리도 동반 상승했다는 속보.</div>
+      <a class="news-link" href="https://www.kcif.or.kr/annual/reportView?rpt_no=37337&mn=001002&skey=&sval=&pg=1&pp=10" target="_blank" rel="noopener">원문 보기 →</a>
+    </div>
+
+    <div class="news-item kcif-item">
+      <div class="news-item-header">
+        <h3>영국 신임 총리의 주요 정책 방향 및 시장 반응</h3>
+        <span class="news-date">2026-07-23</span>
+      </div>
+      <div><span class="item-tag-dept">세계경제 · 유럽</span></div>
+      <div class="news-summary">최가윤·강영숙 작성. 영국 신임 총리 취임 이후 발표된 주요 정책 방향과 이에 대한 금융시장 반응을 분석.</div>
+      <a class="news-link" href="https://www.kcif.or.kr/economy/economyView?rpt_no=37335&mn=003004&skey=&sval=&pg=1&pp=10" target="_blank" rel="noopener">원문 보기 →</a>
+    </div>
+
+    <div class="news-item kcif-item">
+      <div class="news-item-header">
+        <h3>해외 및 국내 주요 경제 지표(26.7월)</h3>
+        <span class="news-date">2026-07-23</span>
+      </div>
+      <div><span class="item-tag-dept">지표ㆍ자료 · 주요경제지표</span></div>
+      <div class="news-summary">김우진 작성. 2026년 7월 기준 국내외 주요 경제지표를 정리한 월간 지표 자료.</div>
+      <a class="news-link" href="https://www.kcif.or.kr/chart/economyView?rpt_no=37334&mn=004002007&skey=&sval=&pg=1&pp=10" target="_blank" rel="noopener">원문 보기 →</a>
+    </div>
+
+    <div class="news-item kcif-item">
+      <div class="news-item-header">
+        <h3>[7.23] 미국 트럼프, 對이란 공격 확대 경고. 이란과의 협상 복귀 기대는 점차 감소 등</h3>
+        <span class="news-date">2026-07-23</span>
+      </div>
+      <div><span class="item-tag-dept">국제금융속보</span><span class="view-badge">조회 800</span></div>
+      <div class="news-summary">해외동향부 작성. 트럼프 대통령이 대이란 공격 확대를 경고했으며, 이란과의 외교적 협상 복귀 기대감이 점차 낮아지고 있다는 속보.</div>
+      <a class="news-link" href="https://www.kcif.or.kr/annual/reportView?rpt_no=37333&mn=001002&skey=&sval=&pg=1&pp=10" target="_blank" rel="noopener">원문 보기 →</a>
+    </div>
+
+    <div class="news-item kcif-item">
+      <div class="news-item-header">
+        <h3>엔/달러 환율 '86년 11월 이래 최고치 급등과 해외시각</h3>
+        <span class="news-date">2026-07-22</span>
+      </div>
+      <div><span class="item-tag-dept">국제금융 · 외환</span></div>
+      <div class="news-summary">장수창·조은 작성. 엔/달러 환율이 1986년 11월 이래 최고치로 급등한 배경과 해외 주요 기관의 시각을 정리.</div>
+      <a class="news-link" href="https://www.kcif.or.kr/finance/financeView?rpt_no=37332&mn=002002&skey=&sval=&pg=1&pp=10" target="_blank" rel="noopener">원문 보기 →</a>
+    </div>
+
+    <div class="news-item kcif-item">
+      <div class="news-item-header">
+        <h3>글로벌 캐리트레이드 여건 분석 및 전망</h3>
+        <span class="news-date">2026-07-22</span>
+      </div>
+      <div><span class="item-tag-dept">국제금융 · 외환</span></div>
+      <div class="news-summary">김용준 작성. 최근 글로벌 캐리트레이드 여건 변화를 분석하고 향후 전망을 제시.</div>
+      <a class="news-link" href="https://www.kcif.or.kr/finance/financeView?rpt_no=37331&mn=002002&skey=&sval=&pg=1&pp=10" target="_blank" rel="noopener">원문 보기 →</a>
+    </div>
+
+    <div class="news-item kcif-item">
+      <div class="news-item-header">
+        <h3>[7.22] 미국 트럼프, 이란 핵시설 타격 경고. 홍해에서 문제 발생 시 처리할 방침 등</h3>
+        <span class="news-date">2026-07-22</span>
+      </div>
+      <div><span class="item-tag-dept">국제금융속보</span><span class="view-badge">조회 902</span></div>
+      <div class="news-summary">해외동향부 작성. 트럼프 대통령이 이란 핵시설 타격 가능성을 경고했으며, 홍해 지역 문제 발생 시 대응 방침도 언급했다는 속보.</div>
+      <a class="news-link" href="https://www.kcif.or.kr/annual/reportView?rpt_no=37329&mn=001002&skey=&sval=&pg=1&pp=10" target="_blank" rel="noopener">원문 보기 →</a>
+    </div>
+
+    <div class="news-item kcif-item">
+      <div class="news-item-header">
+        <h3>일본 『2026 경제 재정 운영 및 개혁 기본 방침』에 대한 평가</h3>
+        <span class="news-date">2026-07-21</span>
+      </div>
+      <div><span class="item-tag-dept">세계경제 · 일본</span></div>
+      <div class="news-summary">강영숙 작성. 일본 정부의 2026년 경제 재정 운영 및 개혁 기본 방침 발표 내용에 대한 평가.</div>
+      <a class="news-link" href="https://www.kcif.or.kr/economy/economyView?rpt_no=37328&mn=003005&skey=&sval=&pg=1&pp=10" target="_blank" rel="noopener">원문 보기 →</a>
+    </div>
+
+    <div class="news-item kcif-item">
+      <div class="news-item-header">
+        <h3>[7.21] 미국 트럼프, 이란에 보복 경고. 이란은 미국과의 외교적 접촉 진행 등</h3>
+        <span class="news-date">2026-07-21</span>
+      </div>
+      <div><span class="item-tag-dept">국제금융속보</span><span class="view-badge">조회 990</span></div>
+      <div class="news-summary">해외동향부 작성. 트럼프 대통령의 대이란 보복 경고 속에서도 이란이 미국과 외교적 접촉을 진행 중이라는 속보.</div>
+      <a class="news-link" href="https://www.kcif.or.kr/annual/reportView?rpt_no=37327&mn=001002&skey=&sval=&pg=1&pp=10" target="_blank" rel="noopener">원문 보기 →</a>
+    </div>
+
+    <div class="news-item kcif-item">
+      <div class="news-item-header">
+        <h3>AI 기업들의 채권 조달 현황 및 평가</h3>
+        <span class="news-date">2026-07-20</span>
+      </div>
+      <div><span class="item-tag-dept">국제금융 · 채권</span></div>
+      <div class="news-summary">김선경·김윤경 작성. 최근 AI 기업들의 채권 발행을 통한 자금 조달 현황과 이에 대한 평가를 정리.</div>
+      <a class="news-link" href="https://www.kcif.or.kr/finance/financeView?rpt_no=37324&mn=002003&skey=&sval=&pg=1&pp=10" target="_blank" rel="noopener">원문 보기 →</a>
+    </div>
+
+    <div class="disclaimer" style="margin-top:16px;">
+      출처: 국제금융센터(KCIF) 공개 목록 페이지(www.kcif.or.kr) · 2026-07-24 확인 기준 · 보고서 전문은 유료회원 전용이며 위 내용은 공개 제목·요약 정보만 반영했습니다.
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>📎 참고자료: 주요 AI 기업들의 미 달러화 IG·HY 회사채 발행 현황</h2>
+    <p class="hint" style="margin-bottom:10px;">AI 밸류체인 전반의 회사채 발행·신용등급 현황. 하이퍼스케일러·GPU·메모리 등 카테고리별 자금조달 규모를 한눈에 비교할 수 있는 자료입니다.</p>
+    <table class="refdata-table">
+      <thead><tr><th>카테고리</th><th>기업명</th><th>신용등급<br>(S&P/Moody's/Fitch)</th><th>'21~'26년 발행액</th><th>발행잔액</th></tr></thead>
+      <tbody>
+        <tr><td class="refdata-cat" rowspan="3">설계</td><td>AMD</td><td>A/A1/-</td><td>$25억</td><td>$25억</td></tr>
+        <tr><td>Intel</td><td>BBB/Baa2/BBB</td><td>$311억</td><td>$492억</td></tr>
+        <tr><td>Broadcom</td><td>A-/A3/A-</td><td>$699억</td><td>$540억</td></tr>
+        <tr><td class="refdata-cat" rowspan="3">메모리</td><td>Micron</td><td>BBB/Baa2/BBB+</td><td>$93억</td><td>$31억</td></tr>
+        <tr><td>Kioxia</td><td>BBB-/-/BBB-</td><td>$22억</td><td>$22억</td></tr>
+        <tr><td>SK Hynix</td><td>BBB+/Baa1/BBB+</td><td>$77억</td><td>$55억</td></tr>
+        <tr><td class="refdata-cat">GPU</td><td>Nvidia</td><td>AA/Aa1/-</td><td>$288억</td><td>$335억</td></tr>
+        <tr><td class="refdata-cat">파운드리</td><td>TSMC</td><td>AA-/Aa3/-</td><td>$125억</td><td>$134억</td></tr>
+        <tr><td class="refdata-cat">장비</td><td>Applied Materials</td><td>A/A2/-</td><td>$17억</td><td>$65억</td></tr>
+        <tr><td class="refdata-cat" rowspan="5">하이퍼스케일러</td><td>Alphabet</td><td>AA+/Aa2/-</td><td>$425억</td><td>$535억</td></tr>
+        <tr><td>Amazon</td><td>AA/A1/AA-</td><td>$1,165억</td><td>$1,273억</td></tr>
+        <tr><td>Meta</td><td>AA-/Aa3/-</td><td>$939억</td><td>$840억</td></tr>
+        <tr><td>Microsoft</td><td>AAA/Aaa/-</td><td>$149억</td><td>$433억</td></tr>
+        <tr><td>Oracle</td><td>BBB-/Baa2/BBB</td><td>$843억</td><td>$1,235억</td></tr>
+        <tr class="hy-row"><td class="refdata-cat">네오클라우드</td><td>CoreWeave<span class="hy-tag">HY</span></td><td>B/B1/BB-</td><td>$78억</td><td>$78억</td></tr>
+        <tr><td class="refdata-cat" rowspan="3">네트워크 통신장비</td><td>Jabil</td><td>BBB-/Baa3/BBB-</td><td>$23억</td><td>$34억</td></tr>
+        <tr class="hy-row"><td>Ciena<span class="hy-tag">HY</span></td><td>BB+/Baa3/-</td><td>$4억</td><td>$4억</td></tr>
+        <tr><td>Amphenol</td><td>A-/A3/-</td><td>$124억</td><td>$134억</td></tr>
+        <tr><td class="refdata-cat" rowspan="3">에너지 및 전력</td><td>Constellation Energy</td><td>BBB+/Baa1/-</td><td>$108억</td><td>$114억</td></tr>
+        <tr><td>Eaton</td><td>A-/A3/-</td><td>$115억</td><td>$146억</td></tr>
+        <tr><td>Vertiv</td><td>BBB-/Baa2/BBB</td><td>$30억</td><td>$30억</td></tr>
+        <tr class="hy-row"><td class="refdata-cat">데이터 및 정보분석</td><td>Elastic<span class="hy-tag">HY</span></td><td>BB/Ba2/-</td><td>$6억</td><td>$6억</td></tr>
+        <tr><td class="refdata-cat" rowspan="2">소프트웨어 및<br>어플리케이션</td><td>Salesforce</td><td>A+/A2/-</td><td>$320억</td><td>$335억</td></tr>
+        <tr><td>Servicenow</td><td>A/A2/-</td><td>$40억</td><td>$55억</td></tr>
+      </tbody>
+    </table>
+    <div class="disclaimer" style="margin-top:12px;">
+      자료: 국제금융센터 · 7.14일 기준, 미 달러화 채권만 집계 (전환사채·레버리지론 등 미포함) · 회색 음영(HY 태그)은 하이일드(투기등급) 회사채입니다.
+    </div>
+  </section>
+
+  </div><!-- /tab-kcif -->
+
+  <div class="tab-panel" id="tab-volume">
+
+  <div class="note" style="background:#fff8ec; border:1px solid #f0e0c0; border-radius:12px; padding:14px 18px; font-size:13px; color:#5c4a1f; margin-bottom:20px;">
+    ⚠️ <b>데이터 안내:</b> 실시간 "거래대금 순위"는 KRX·거래소 전용 데이터가 필요해 완전한 20개 정밀 순위까지는 확보하지 못했습니다. 대신 각 시장의 <b>확정 종가·등락률과 당일 최대 이슈 종목</b>을 언론 보도 기준으로 교차 확인해 정리했으며, 앞으로 거래일마다 이 탭 아래에 날짜별로 계속 누적됩니다.
+  </div>
+
+  <div class="day-divider">📅 2026-07-24 (금) — 한국 정규장 / 2026-07-23 (목) — 미국 정규장</div>
+
+  <div class="summary-box">
+    <span class="updated-badge">확인: 2026-07-26 (2차 검증 반영)</span>
+    <h2>📌 마켓 요약</h2>
+    <table>
+      <tr><th>지수</th><th>종가</th><th>등락</th><th>비고</th></tr>
+      <tr><td>코스피</td><td>6,690.62</td><td style="color:#d34848;">-406.27p (-5.72%)</td><td>미국발 기술주 급락 + 유가 100달러 돌파 여파, 원/달러 1,466.60원</td></tr>
+      <tr><td>코스닥</td><td>748.22</td><td style="color:#d34848;">-42.06p (-5.32%)</td><td>중소형 성장주 동반 급락</td></tr>
+      <tr><td>다우존스</td><td>51,711.65</td><td style="color:#d34848;">-506.93p (-0.97%)</td><td>7/23(목) 마감, 산업재만 유일하게 강세(+1.77%)</td></tr>
+      <tr><td>S&P500</td><td>7,408.30</td><td style="color:#d34848;">-90.66p (-1.21%)</td><td>11개 업종 중 8개 하락</td></tr>
+      <tr><td>나스닥종합</td><td>25,137.69</td><td style="color:#d34848;">-553.21p (-2.15%)</td><td>장중 5월 초 이래 최저 수준까지 밀림</td></tr>
+    </table>
+    <p style="margin-top:8px;">공통 배경: 국제유가 배럴당 100달러 돌파 → 인플레이션 우려 재점화 → 美 국채금리·달러 동반 상승. 여기에 빅테크 실적발표가 AI 투자 부담 우려를 재점화시키며 낙폭 확대.</p>
+  </div>
+
+  <section class="panel">
+    <h2>🇺🇸 미국 시장 — 최대 이슈 종목 (2026-07-23 마감 기준)</h2>
+    <table class="refdata-table">
+      <thead><tr><th>종목</th><th>등락률</th><th>이슈 요약</th></tr></thead>
+      <tbody>
+        <tr class="hy-row"><td class="ticker">Tesla</td><td style="color:#d34848;">-14.52%</td><td>2년여 만에 처음으로 2분기 잉여현금흐름(FCF) 마이너스 전환 발표. 경기소비재 업종 전체 -5% 넘게 하락시킨 주범.</td></tr>
+        <tr class="hy-row"><td class="ticker">Alphabet</td><td style="color:#d34848;">-7.13%</td><td>설비투자(CAPEX) 확대 계획과 사상 첫 '현금 소진(캐시번)' 발표. 커뮤니케이션서비스 업종 -5.2% 견인.</td></tr>
+        <tr><td class="ticker">SanDisk</td><td style="color:#d34848;">-12% 이상</td><td>메모리 반도체 밸류에이션 우려로 최근 세션 낙폭 최대.</td></tr>
+        <tr><td class="ticker">SK Hynix (ADR)</td><td style="color:#d34848;">-13% 이상</td><td>美 상장 주식이 메모리 밸류에이션 재평가 속 급락.</td></tr>
+        <tr><td class="ticker">Micron / AMD</td><td style="color:#d34848;">각 -5% 이상</td><td>AI 반도체 고평가 논란 속 동반 조정.</td></tr>
+        <tr><td class="ticker">Broadcom</td><td style="color:#d34848;">약 -5%</td><td>반도체 밸류에이션 우려로 동반 하락.</td></tr>
+        <tr><td class="ticker">Texas Instruments</td><td style="color:#d34848;">-3.13%</td><td>분기 매출 전망을 예상보다 높게 제시했음에도 하락 — 업종 전반 밸류에이션 부담이 실적 서프라이즈를 압도.</td></tr>
+        <tr><td class="ticker">Nvidia</td><td style="color:#d34848;">-1.56%</td><td>필라델피아 반도체지수(SOX) -0.54% 흐름 속 동반 조정.</td></tr>
+        <tr><td class="ticker">Netflix</td><td style="color:#d34848;">시간외 -9% 근접</td><td>사용자 참여 감소 및 숏폼 플랫폼과의 경쟁 심화 우려로 실망스러운 실적 발표.</td></tr>
+      </tbody>
+    </table>
+    <p class="hint" style="margin-top:10px;">참고: 위 종목들은 언론에서 가장 비중있게 다뤄진 당일 최대 이슈·변동 종목이며, 거래대금 자체의 정밀 순위는 아닙니다. 정확한 거래대금 순위는 Yahoo Finance "Most Active" 또는 Nasdaq.com에서 실시간 확인 가능합니다.</p>
+  </section>
+
+  <section class="panel">
+    <h2>🇰🇷 한국 시장 — 확인된 주요 종목 (2026-07-24, 2차 검증)</h2>
+    <table class="refdata-table">
+      <thead><tr><th>종목명</th><th>등락률</th><th>가격/거래대금</th><th>이슈 요약</th></tr></thead>
+      <tbody>
+        <tr><td class="ticker">SK하이닉스</td><td style="color:#d34848;">-3.60% (오전 10:34 기준)</td><td>1,850,000원 (전일종가 1,919,000원) · 거래대금 2조6,871억원(10:34시점)</td><td>네이버페이증권 실시간 데이터로 재확인. 동일업종 등락률 -4.15% 대비는 선방. 미국 SK하이닉스 ADR -13%대 급락 여파. <b>단, 장 후반 지수 낙폭이 -5.72%까지 확대된 만큼 실제 종가는 이보다 더 하락했을 가능성이 높습니다(최종 종가 미확인).</b></td></tr>
+        <tr><td class="ticker">삼성전자</td><td style="color:#d34848;">-2.41%~-7.41% (시점별 상이)</td><td>250,000~263,500원대 (자료마다 편차)</td><td>여러 소스 간 수치 편차가 커 신뢰도 낮음 — 오전 장중 -2.41%(263,500원) 보도와 오후 -7.41%(250,000원) 추정치가 혼재. <b>정확한 종가는 네이버금융·증권사 앱에서 직접 재확인을 권장드립니다.</b></td></tr>
+        <tr><td class="ticker">LG에너지솔루션</td><td style="color:#d34848;">-1.85%~ (장중)</td><td>-</td><td>시총 상위주 동반 약세 흐름.</td></tr>
+        <tr><td class="ticker">삼성바이오로직스</td><td style="color:#d34848;">-1.12%~ (장중)</td><td>-</td><td>시총 상위주 동반 약세.</td></tr>
+        <tr><td class="ticker">POSCO홀딩스</td><td style="color:#d34848;">-2.05%~ (장중)</td><td>-</td><td>시총 상위주 동반 약세.</td></tr>
+        <tr><td class="ticker">현대차 / 기아</td><td style="color:#d34848;">각 -1.2~1.45%(장중)</td><td>-</td><td>원-달러 환율 상승(원화 약세) 호재에도 대외 불안 요인에 약보합.</td></tr>
+        <tr><td class="ticker">두산에너빌리티</td><td style="color:#1f8b4d;">+5.78% (전일 7/23)</td><td>-</td><td>원전·에너지 테마 관련 매수세로 거래대금 상위.</td></tr>
+        <tr><td class="ticker">큐리언트</td><td style="color:#1f8b4d;">+12.19% (전일 7/23)</td><td>-</td><td>바이오 테마 급등, 거래대금 상위 최대 강세.</td></tr>
+        <tr><td class="ticker">HLB이노베이션 / 엘앤씨바이오</td><td style="color:#1f8b4d;">각 +3~5% (전일)</td><td>-</td><td>바이오 섹터 강세 흐름.</td></tr>
+      </tbody>
+    </table>
+    <p class="hint" style="margin-top:10px;">
+      ⚠️ SK하이닉스는 실시간 증권 데이터(네이버페이증권)로 교차 검증해 신뢰도를 높였으나 오전 10:34 시점 스냅샷입니다. 삼성전자는 소스 간 수치 편차가 있어 참고용으로만 활용해주세요. 코스피 지수 자체는 종가 기준 -5.72%로 확정된 수치입니다.
+    </p>
+  </section>
+
+  </div><!-- /tab-volume -->
+
+</div>
+
+<script>
+function switchTab(name) {
+  document.getElementById('tab-13f').classList.toggle('active', name === '13f');
+  document.getElementById('tab-top100').classList.toggle('active', name === 'top100');
+  document.getElementById('tab-news').classList.toggle('active', name === 'news');
+  document.getElementById('tab-nasdaq').classList.toggle('active', name === 'nasdaq');
+  document.getElementById('tab-kcif').classList.toggle('active', name === 'kcif');
+  document.getElementById('tab-volume').classList.toggle('active', name === 'volume');
+  document.getElementById('tab-btn-13f').classList.toggle('active', name === '13f');
+  document.getElementById('tab-btn-top100').classList.toggle('active', name === 'top100');
+  document.getElementById('tab-btn-news').classList.toggle('active', name === 'news');
+  document.getElementById('tab-btn-nasdaq').classList.toggle('active', name === 'nasdaq');
+  document.getElementById('tab-btn-kcif').classList.toggle('active', name === 'kcif');
+  document.getElementById('tab-btn-volume').classList.toggle('active', name === 'volume');
+}
+window.switchTab = switchTab;
+</script>
+
+<script>
+const STORAGE_KEY = 'entries';
+let entries = [];
+
+function parseItems(text) {
+  return text.split('\n').map(l => l.trim()).filter(Boolean).map(line => {
+    const parts = line.split(' - ');
+    const ticker = parts[0].trim();
+    const note = parts.slice(1).join(' - ').trim();
+    return { ticker, note };
+  });
+}
+
+function quarterSortKey(q) {
+  // "2026-Q2" -> 20262 형태로 정렬용 숫자화, 형식이 달라도 문자열 비교 fallback
+  const m = (q || '').match(/(\d{4}).*Q(\d)/i);
+  if (m) return parseInt(m[1]) * 10 + parseInt(m[2]);
+  return q || '';
+}
+
+async function loadEntries() {
+  try {
+    const res = await window.storage.get(STORAGE_KEY, false);
+    entries = res && res.value ? JSON.parse(res.value) : [];
+  } catch (e) {
+    entries = [];
+  }
+}
+
+async function saveEntries() {
+  try {
+    await window.storage.set(STORAGE_KEY, JSON.stringify(entries), false);
+  } catch (e) {
+    setStatus('저장 중 오류가 발생했습니다. 다시 시도해주세요.', true);
+  }
+}
+
+function setStatus(msg, isError) {
+  const el = document.getElementById('status');
+  el.textContent = msg;
+  el.style.color = isError ? '#d34848' : '#6b7280';
+  if (msg) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 3000);
+}
+
+function render() {
+  const list = document.getElementById('list');
+  if (!entries.length) {
+    list.innerHTML = '<div class="empty">아직 저장된 데이터가 없습니다. 위 양식으로 첫 항목을 추가해보세요.</div>';
+    return;
+  }
+
+  const sorted = [...entries].sort((a, b) => {
+    const qa = quarterSortKey(a.quarter), qb = quarterSortKey(b.quarter);
+    if (qa !== qb) return qb > qa ? 1 : -1;
+    return (b.addedAt || 0) - (a.addedAt || 0);
+  });
+
+  let html = '';
+  let lastQuarter = null;
+  sorted.forEach(entry => {
+    if (entry.quarter !== lastQuarter) {
+      html += `<div class="quarter-divider">${escapeHtml(entry.quarter || '분기 미지정')}</div>`;
+      lastQuarter = entry.quarter;
+    }
+    html += `<div class="entry" data-id="${entry.id}">
+      <div class="entry-header">
+        <h3>${escapeHtml(entry.institution)}</h3>
+        <span class="meta">${escapeHtml(entry.meta || '')}${entry.date ? ' · ' + escapeHtml(entry.date) : ''}</span>
+      </div>
+      <table>
+        <thead><tr><th>순위</th><th>종목</th><th>비고</th></tr></thead>
+        <tbody>
+          ${entry.items.map((it, i) => `<tr><td><span class="rank">${i+1}</span></td><td class="ticker">${escapeHtml(it.ticker)}</td><td>${escapeHtml(it.note || '')}</td></tr>`).join('')}
+        </tbody>
+      </table>
+      <div class="row-actions">
+        <button class="btn danger" onclick="deleteEntry('${entry.id}')">삭제</button>
+      </div>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str == null ? '' : str;
+  return div.innerHTML;
+}
+
+async function deleteEntry(id) {
+  entries = entries.filter(e => e.id !== id);
+  await saveEntries();
+  render();
+  setStatus('삭제되었습니다.');
+}
+window.deleteEntry = deleteEntry;
+
+async function addEntry() {
+  const institution = document.getElementById('f-inst').value.trim();
+  const quarter = document.getElementById('f-quarter').value.trim();
+  const meta = document.getElementById('f-meta').value.trim();
+  const date = document.getElementById('f-date').value.trim();
+  const itemsText = document.getElementById('f-items').value;
+  const items = parseItems(itemsText);
+
+  if (!institution) { setStatus('기관명을 입력해주세요.', true); return; }
+  if (!items.length) { setStatus('매수 종목을 최소 1개 이상 입력해주세요.', true); return; }
+
+  entries.push({
+    id: 'e_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    institution, quarter, meta, date, items,
+    addedAt: Date.now()
+  });
+
+  await saveEntries();
+  render();
+  clearForm();
+  setStatus('추가되었습니다.');
+}
+
+function clearForm() {
+  ['f-inst','f-quarter','f-meta','f-date','f-items'].forEach(id => document.getElementById(id).value = '');
+}
+
+document.getElementById('add-btn').addEventListener('click', addEntry);
+document.getElementById('clear-form-btn').addEventListener('click', clearForm);
+
+async function seedIfEmpty() {
+  if (entries.length) return;
+  entries = [
+    {
+      id: 'seed_1', institution: '버크셔 해서웨이', quarter: '2026-Q1',
+      meta: '$263B · 29개 종목', date: '2026.03.31 기준',
+      items: [
+        { ticker: 'GOOGL', note: '보유 주식 수 +200% 이상 급증 — 최대 매수' },
+        { ticker: 'GOOG', note: '신규 편입' },
+        { ticker: 'DAL', note: '신규 편입 (메이시스 대신)' },
+        { ticker: 'LEN', note: '지속 증량 — 美 부동산 베팅' },
+        { ticker: 'NYT', note: '증량' }
+      ], addedAt: 1
+    },
+    {
+      id: 'seed_2', institution: '베일리 기포드', quarter: '2026-Q1',
+      meta: '$97.9B · 271개 종목', date: '2026.03.31 기준',
+      items: [
+        { ticker: 'BAP', note: '최대 증량' },
+        { ticker: 'EOG', note: '증량' },
+        { ticker: 'MMYT', note: '증량 — 인도 중산층 여행 수요' },
+        { ticker: 'AXON', note: '증량' },
+        { ticker: 'IOT', note: '증량' }
+      ], addedAt: 2
+    },
+    {
+      id: 'seed_3', institution: '브리지워터', quarter: '2026-Q1',
+      meta: '$22.4B · 993개 종목', date: '2026.03.31 기준',
+      items: [
+        { ticker: 'AMZN', note: '핵심 매수 — 지속 증량' },
+        { ticker: 'NVDA', note: '지속 증량' },
+        { ticker: 'TSM', note: '대폭 증량' },
+        { ticker: 'AVGO', note: '대량 매수' },
+        { ticker: 'MU', note: 'HBM 슈퍼사이클 베팅' }
+      ], addedAt: 3
+    },
+    {
+      id: 'seed_4', institution: 'ARK (캐시 우드)', quarter: '2026-Q1',
+      meta: '$12.9B · 181개 종목', date: '2026.03.31 기준',
+      items: [
+        { ticker: 'AVGO', note: '최대 매수' },
+        { ticker: 'TEM', note: '대량 매수 — AI 정밀의료' },
+        { ticker: 'HOOD', note: '증량' },
+        { ticker: 'BLSH', note: '증량 — 암호화폐 거래소' },
+        { ticker: 'RBLX', note: '증량' }
+      ], addedAt: 4
+    }
+  ];
+  await saveEntries();
+}
+
+const NEWS_STORAGE_KEY = 'news_entries';
+let newsEntries = [];
+
+async function loadNews() {
+  try {
+    const res = await window.storage.get(NEWS_STORAGE_KEY, false);
+    newsEntries = res && res.value ? JSON.parse(res.value) : [];
+  } catch (e) {
+    newsEntries = [];
+  }
+}
+
+async function saveNews() {
+  try {
+    await window.storage.set(NEWS_STORAGE_KEY, JSON.stringify(newsEntries), false);
+  } catch (e) {
+    setNewsStatus('저장 중 오류가 발생했습니다. 다시 시도해주세요.', true);
+  }
+}
+
+function setNewsStatus(msg, isError) {
+  const el = document.getElementById('news-status');
+  el.textContent = msg;
+  el.style.color = isError ? '#d34848' : '#6b7280';
+  if (msg) setTimeout(() => { if (el.textContent === msg) el.textContent = ''; }, 3000);
+}
+
+function renderNews() {
+  const list = document.getElementById('news-list');
+  if (!newsEntries.length) {
+    list.innerHTML = '<div class="empty">아직 저장된 뉴스가 없습니다. 위 양식으로 첫 항목을 추가해보세요.</div>';
+    return;
+  }
+
+  const sorted = [...newsEntries].sort((a, b) => {
+    const da = a.date || '', db = b.date || '';
+    if (da !== db) return db > da ? 1 : -1;
+    return (b.addedAt || 0) - (a.addedAt || 0);
+  });
+
+  let html = '';
+  let lastDate = null;
+  sorted.forEach(item => {
+    if (item.date !== lastDate) {
+      html += `<div class="day-divider">${escapeHtml(item.date || '날짜 미지정')}</div>`;
+      lastDate = item.date;
+    }
+    html += `<div class="news-item" data-id="${item.id}">
+      <div class="news-item-header">
+        <h3>${escapeHtml(item.title)}</h3>
+        <span class="news-date">${escapeHtml(item.date || '')}</span>
+      </div>
+      <div>
+        ${item.source ? `<span class="news-source">${escapeHtml(item.source)}</span>` : ''}
+      </div>
+      ${item.summary ? `<div class="news-summary">${escapeHtml(item.summary)}</div>` : ''}
+      ${item.url ? `<a class="news-link" href="${escapeHtml(item.url)}" target="_blank" rel="noopener">원문 링크 →</a>` : ''}
+      <div class="row-actions">
+        <button class="btn danger" onclick="deleteNews('${item.id}')">삭제</button>
+      </div>
+    </div>`;
+  });
+  list.innerHTML = html;
+}
+
+async function deleteNews(id) {
+  newsEntries = newsEntries.filter(e => e.id !== id);
+  await saveNews();
+  renderNews();
+  setNewsStatus('삭제되었습니다.');
+}
+window.deleteNews = deleteNews;
+
+async function addNews() {
+  const title = document.getElementById('n-title').value.trim();
+  const source = document.getElementById('n-source').value.trim();
+  const date = document.getElementById('n-date').value.trim();
+  const url = document.getElementById('n-url').value.trim();
+  const summary = document.getElementById('n-summary').value.trim();
+
+  if (!title) { setNewsStatus('제목을 입력해주세요.', true); return; }
+
+  newsEntries.push({
+    id: 'n_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7),
+    title, source, date, url, summary,
+    addedAt: Date.now()
+  });
+
+  await saveNews();
+  renderNews();
+  clearNewsForm();
+  setNewsStatus('추가되었습니다.');
+}
+
+function clearNewsForm() {
+  ['n-title','n-source','n-date','n-url','n-summary'].forEach(id => document.getElementById(id).value = '');
+}
+
+async function seedNewsIfEmpty() {
+  const seeds = [
+    {
+      id: 'nseed_1', title: 'SK하이닉스, 청주 첨단 패키징 공장(P&T7) 투자 확대',
+      source: '파이낸셜뉴스', date: '2026-07-22',
+      summary: 'SK하이닉스가 이사회를 열고 청주 P&T7 건설 투자금액을 약 7조931억원으로 확대 결정했다고 공시. HBM 등 AI 메모리 수요 대응을 위한 청주 생산거점 확보 목적이며, 클린룸 오픈 일정을 앞당기기 위한 조치.',
+      url: 'https://www.fnnews.com/news/202607221720138340', addedAt: 1
+    },
+    {
+      id: 'nseed_2', title: 'SK하이닉스(ADR) 주가 급등, 반도체주 반등 랠리',
+      source: 'Investing.com', date: '2026-07-22',
+      summary: 'SK하이닉스 ADR 주가가 오전 거래에서 약 7.9% 급등하며 163.15달러 기록. 글로벌 반도체 섹터 전반이 지난주 매도세에서 벗어나 반등하는 흐름 속에 나온 상승.',
+      url: 'https://kr.investing.com/equities/sk-hynix-adr', addedAt: 2
+    },
+    {
+      id: 'nseed_3', title: '국내증시, 삼성·SK하이닉스 동반 강세로 코스피 3%대 급등',
+      source: 'Investing.com 취합', date: '2026-07-22',
+      summary: '미국 증시 반도체 강세 흐름이 국내 증시로 이어지며 삼성전자·SK하이닉스가 동반 상승, 코스피가 3%대 급등하고 매수 사이드카 발동.',
+      url: 'https://kr.investing.com/equities/sk-hynix-inc', addedAt: 3
+    },
+    {
+      id: 'nseed_4', title: '번스타인 "6월 한국 수출 데이터, HBM 강세 반영"',
+      source: 'EBN', date: '2026-07-21',
+      summary: '번스타인이 리서치 노트를 통해 6월 한국 수출 데이터가 삼성전자·SK하이닉스의 HBM 실적 강세를 뒷받침한다고 분석.',
+      url: 'https://kr.investing.com/equities/sk-hynix-adr', addedAt: 4
+    },
+    {
+      id: 'nseed_5', title: '"1% 초고수"들, 반도체 장비주 매수·SK하이닉스는 차익실현 매도',
+      source: 'Investing.com', date: '2026-07-22',
+      summary: '투자수익률 상위 1% 트레이더들이 7월 22일 장 마감 기준으로 반도체 장비·부품주를 사들이고 SK하이닉스·파마리서치는 팔아치운 것으로 나타남.',
+      url: 'https://kr.investing.com/equities/sk-hynix-inc', addedAt: 5
+    },
+    {
+      id: 'nseed_6', title: '"피크아웃 아직 멀었다"… 소비 침체에도 D램 가격 고공행진',
+      source: '이데일리', date: '2026-07-23',
+      summary: '트렌드포스에 따르면 23일 오전 11시 기준 DDR4 8Gb(1G×8) 3200 현물 평균가격이 41.60달러 기록, 지난 15일 39.8달러 대비 약 4.5% 상승. DDR4 16Gb는 81.50달러까지 상승, DDR5 16Gb 4800·5600은 50달러선 유지. AI 서버 수요가 생산능력 대부분을 흡수하며 가격 강세 지속.',
+      url: 'https://edaily.co.kr/News/Read?mediaCodeNo=257&newsId=05166006645517472', addedAt: 6
+    },
+    {
+      id: 'nseed_7', title: "스마트폰·PC 성수기 온다…'피크아웃?' D램 가격 더 치솟아",
+      source: '머니투데이', date: '2026-07-22',
+      summary: 'D램익스체인지에 따르면 22일 기준 범용 DDR4(16GB) 평균 현물거래가격이 81.2달러로 한 달 전보다 17.5% 상승, 16일 사상 첫 80달러 돌파 이후 연일 최고가 경신. 4분기 성수기 앞둔 구매 확대와 HBM 생산 확대에 따른 범용 D램 공급 감소가 원인.',
+      url: 'https://www.mt.co.kr/industry/2026/07/22/2026072213322947770', addedAt: 7
+    }
+  ];
+
+  const existingIds = new Set(newsEntries.map(e => e.id));
+  const toAdd = seeds.filter(s => !existingIds.has(s.id));
+  if (!toAdd.length) return;
+
+  newsEntries = newsEntries.concat(toAdd);
+  await saveNews();
+}
+
+function filterNews() {
+  const kw = document.getElementById('news-filter').value.trim().toLowerCase();
+  const items = document.querySelectorAll('#news-list .news-item');
+  let visibleCount = 0;
+  items.forEach(el => {
+    const text = el.textContent.toLowerCase();
+    const match = !kw || text.includes(kw);
+    el.style.display = match ? '' : 'none';
+    if (match) visibleCount++;
+  });
+  const dividers = document.querySelectorAll('#news-list .day-divider');
+  dividers.forEach(d => {
+    let sib = d.nextElementSibling;
+    let hasVisible = false;
+    while (sib && !sib.classList.contains('day-divider')) {
+      if (sib.style.display !== 'none') hasVisible = true;
+      sib = sib.nextElementSibling;
+    }
+    d.style.display = hasVisible ? '' : 'none';
+  });
+  const emptyMsg = document.getElementById('news-filter-empty');
+  if (emptyMsg) emptyMsg.style.display = (kw && visibleCount === 0) ? '' : 'none';
+}
+window.filterNews = filterNews;
+
+document.getElementById('news-add-btn').addEventListener('click', addNews);
+document.getElementById('news-clear-btn').addEventListener('click', clearNewsForm);
+
+(async function init() {
+  try {
+    await loadEntries();
+    await seedIfEmpty();
+    render();
+  } catch (e) {
+    document.getElementById('list').innerHTML = '<div class="empty">불러오는 중 오류가 발생했습니다.</div>';
+  }
+  try {
+    await loadNews();
+    await seedNewsIfEmpty();
+    renderNews();
+  } catch (e) {
+    document.getElementById('news-list').innerHTML = '<div class="empty">불러오는 중 오류가 발생했습니다.</div>';
+  }
+})();
+</script>
+</body>
+</html>
