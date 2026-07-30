@@ -182,10 +182,63 @@
   .refdata-table tr.hy-row { background:#f2f2f4; }
   .refdata-table .hy-tag { display:inline-block; font-size:10px; font-weight:700; color:#b3690a; background:#fff3e0; padding:1px 6px; border-radius:999px; margin-left:6px; }
   .refdata-cat { font-weight:700; color:var(--accent); }
+
+  /* 로그인 화면 */
+  #auth-gate {
+    position: fixed; inset: 0; background: var(--bg); z-index: 1000;
+    display: flex; align-items: center; justify-content: center; padding: 20px;
+  }
+  #auth-box {
+    background: var(--card-bg); border: 1px solid var(--border); border-radius: 16px;
+    padding: 32px 28px; max-width: 360px; width: 100%; box-shadow: 0 4px 16px rgba(16,24,40,.08);
+  }
+  #auth-box h2 { font-size: 19px; margin: 0 0 6px; text-align: center; }
+  #auth-box p.sub { font-size: 13px; color: var(--text-muted); text-align: center; margin: 0 0 20px; }
+  #auth-box input {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--border); border-radius: 8px;
+    font-size: 14px; margin-bottom: 10px; font-family: inherit;
+  }
+  #auth-box .btn { width: 100%; padding: 11px; font-size: 14px; margin-top: 4px; }
+  #auth-toggle { text-align: center; font-size: 12.5px; margin-top: 14px; color: var(--text-muted); }
+  #auth-toggle a { color: var(--accent); font-weight: 600; cursor: pointer; text-decoration: none; }
+  #auth-error { color: #d34848; font-size: 12.5px; text-align: center; margin-top: 8px; min-height: 16px; }
+  #app-content { display: none; }
+  #user-bar {
+    display: flex; justify-content: flex-end; align-items: center; gap: 10px;
+    font-size: 12.5px; color: var(--text-muted); margin-bottom: 10px;
+  }
+  #user-bar button {
+    border: 1px solid var(--border); background: #fff; border-radius: 8px; padding: 5px 12px;
+    font-size: 12px; cursor: pointer; color: var(--text-muted);
+  }
 </style>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
 <body>
+
+<div id="auth-gate">
+  <div id="auth-box">
+    <h2 id="auth-title">로그인</h2>
+    <p class="sub" id="auth-sub">투자 정보 대시보드에 오신 것을 환영합니다</p>
+    <input type="email" id="auth-email" placeholder="이메일" autocomplete="email" />
+    <input type="password" id="auth-password" placeholder="비밀번호 (6자 이상)" autocomplete="current-password" />
+    <button class="btn" id="auth-submit-btn">로그인</button>
+    <div id="auth-error"></div>
+    <div id="auth-toggle">계정이 없으신가요? <a id="auth-toggle-link">회원가입</a></div>
+  </div>
+</div>
+
+<div id="app-content">
 <div class="wrap">
+
+  <div id="user-bar">
+    <span id="user-email"></span>
+    <button id="logout-btn">로그아웃</button>
+  </div>
 
   <header>
     <span class="badge">누적 트래커</span>
@@ -594,7 +647,17 @@
 
   <section class="panel">
     <h2>🌐 국제금융센터(KCIF) 최근 발간 자료</h2>
-    <p class="hint" style="margin-bottom:12px;">국제금융속보·국제금융·세계경제·지표 카테고리에서 최근 발간된 자료 (2026-07-24 기준 확인)</p>
+    <p class="hint" style="margin-bottom:12px;">국제금융속보·국제금융·세계경제·지표 카테고리에서 최근 발간된 자료 (2026-07-25 기준 확인)</p>
+
+    <div class="news-item kcif-item">
+      <div class="news-item-header">
+        <h3>[7.25] 미·이란 협상 재개 가능성 부각에 국제유가 6거래일 만에 하락 전환 등</h3>
+        <span class="news-date">2026-07-25</span>
+      </div>
+      <div><span class="item-tag-dept">국제금융속보</span></div>
+      <div class="news-summary">해외동향부 작성. 미국과 이란의 협상 재개 가능성이 부각되며, 지난주 배럴당 100달러를 돌파했던 국제유가가 6거래일 만에 처음으로 하락 전환. 지정학 리스크 완화 조짐이 처음 감지된 사례.</div>
+      <a class="news-link" href="https://www.kcif.or.kr/annual/newsflashList" target="_blank" rel="noopener">원문 보기 →</a>
+    </div>
 
     <div class="news-item kcif-item">
       <div class="news-item-header">
@@ -608,6 +671,25 @@
 
     <div class="news-item kcif-item">
       <div class="news-item-header">
+        <h3>[Fund Flow] 주식펀드는 신흥국 중심, 채권펀드는 북미 중심으로 유입</h3>
+        <span class="news-date">2026-07-24</span>
+      </div>
+      <div><span class="item-tag-dept">자본유출입</span></div>
+      <div class="news-summary">글로벌 펀드 자금 흐름 분석 — 주식형 펀드는 신흥국으로, 채권형 펀드는 북미 지역으로 자금이 집중 유입되는 흐름을 확인.</div>
+      <a class="news-link" href="https://www.kcif.or.kr/annual/newsflashList" target="_blank" rel="noopener">원문 보기 →</a>
+    </div>
+
+    <div class="news-item kcif-item">
+      <div class="news-item-header">
+        <h3>주간 이슈(7.20): 중동상황, 트럼프 관세, ECB, 영국 총리 취임, 중국 AI 모델 여파에 주목</h3>
+        <span class="news-date">2026-07-20</span>
+      </div>
+      <div><span class="item-tag-dept">국제금융 주요 이슈 및 전망</span></div>
+      <div class="news-summary">이번 주 국제금융시장 5대 관전 포인트를 정리한 주간 리포트 — 중동 정세, 미국 관세 정책, ECB 통화정책, 영국 신임 총리 취임, 중국발 AI 모델 경쟁 여파.</div>
+      <a class="news-link" href="https://www.kcif.or.kr/annual/newsflashList" target="_blank" rel="noopener">원문 보기 →</a>
+    </div>
+
+    <div class="news-item kcif-item">      <div class="news-item-header">
         <h3>영국 신임 총리의 주요 정책 방향 및 시장 반응</h3>
         <span class="news-date">2026-07-23</span>
       </div>
@@ -805,6 +887,7 @@
   </div><!-- /tab-volume -->
 
 </div>
+</div><!-- /app-content -->
 
 <script>
 function switchTab(name) {
@@ -846,8 +929,8 @@ function quarterSortKey(q) {
 
 async function loadEntries() {
   try {
-    const res = await window.storage.get(STORAGE_KEY, false);
-    entries = res && res.value ? JSON.parse(res.value) : [];
+    const doc = await db.collection(DASH_COLLECTION).doc('entries').get();
+    entries = doc.exists && doc.data().value ? JSON.parse(doc.data().value) : [];
   } catch (e) {
     entries = [];
   }
@@ -855,7 +938,7 @@ async function loadEntries() {
 
 async function saveEntries() {
   try {
-    await window.storage.set(STORAGE_KEY, JSON.stringify(entries), false);
+    await db.collection(DASH_COLLECTION).doc('entries').set({ value: JSON.stringify(entries), updatedAt: Date.now() });
   } catch (e) {
     setStatus('저장 중 오류가 발생했습니다. 다시 시도해주세요.', true);
   }
@@ -1007,8 +1090,8 @@ let newsEntries = [];
 
 async function loadNews() {
   try {
-    const res = await window.storage.get(NEWS_STORAGE_KEY, false);
-    newsEntries = res && res.value ? JSON.parse(res.value) : [];
+    const doc = await db.collection(DASH_COLLECTION).doc('news_entries').get();
+    newsEntries = doc.exists && doc.data().value ? JSON.parse(doc.data().value) : [];
   } catch (e) {
     newsEntries = [];
   }
@@ -1016,7 +1099,7 @@ async function loadNews() {
 
 async function saveNews() {
   try {
-    await window.storage.set(NEWS_STORAGE_KEY, JSON.stringify(newsEntries), false);
+    await db.collection(DASH_COLLECTION).doc('news_entries').set({ value: JSON.stringify(newsEntries), updatedAt: Date.now() });
   } catch (e) {
     setNewsStatus('저장 중 오류가 발생했습니다. 다시 시도해주세요.', true);
   }
@@ -1143,6 +1226,30 @@ async function seedNewsIfEmpty() {
       source: '머니투데이', date: '2026-07-22',
       summary: 'D램익스체인지에 따르면 22일 기준 범용 DDR4(16GB) 평균 현물거래가격이 81.2달러로 한 달 전보다 17.5% 상승, 16일 사상 첫 80달러 돌파 이후 연일 최고가 경신. 4분기 성수기 앞둔 구매 확대와 HBM 생산 확대에 따른 범용 D램 공급 감소가 원인.',
       url: 'https://www.mt.co.kr/industry/2026/07/22/2026072213322947770', addedAt: 7
+    },
+    {
+      id: 'nseed_8', title: 'Fed, 5회 연속 금리 동결…9-3 표결로 3명 인상 소수의견',
+      source: 'CNN Business', date: '2026-07-29',
+      summary: '케빈 워시 신임 연준 의장 체제 2번째 FOMC에서 기준금리 3.50~3.75% 동결(9-3 표결). 클리블랜드 해맥, 미니애폴리스 카시카리, 댈러스 로건 등 3명이 0.25%p 인상을 주장하며 반대표. 워시 의장은 "원하던 건전한 가족 싸움을 얻었다"고 발언. 중동(이란) 분쟁이 인플레이션 전망을 흐리는 핵심 변수로 지목됨.',
+      url: 'https://www.cnn.com/2026/07/29/business/live-news/federal-reserve-interest-rate-07-29-26', addedAt: 8
+    },
+    {
+      id: 'nseed_9', title: 'Fed 발표 후 증시 변동성 확대…다우 한때 800p 급락 후 낙폭 축소',
+      source: 'CNN Business', date: '2026-07-29',
+      summary: '워시 의장 발언 이후 S&P500·나스닥이 장중 낙폭(각 -1%대)을 만회하며 플러스 전환(+0.2%/+0.5%). 다우존스는 장중 800p 넘게 빠졌다가 550p대 하락으로 낙폭 축소. 유가 급등과 연준의 모호한 포워드 가이던스가 변동성 확대 요인으로 지목.',
+      url: 'https://www.cnn.com/2026/07/29/business/live-news/federal-reserve-interest-rate-07-29-26', addedAt: 9
+    },
+    {
+      id: 'nseed_10', title: 'AI가 생활물가를 끌어올리고 있다 — CNN 분석',
+      source: 'CNN Business', date: '2026-07-28',
+      summary: 'AI 데이터센터의 막대한 전력 수요가 주거용 전기요금 상승을 견인, 무디스 애널리틱스는 가구당 연간 약 375달러 추가 지출 효과로 추산. AI의 전체 인플레이션 기여도는 아직 0.2%p 수준으로 작지만 지속 확대 전망.',
+      url: 'https://www.cnn.com/2026/07/28/economy/ai-boosting-inflation-us', addedAt: 10
+    },
+    {
+      id: 'nseed_11', title: '[국제금융센터] 미·이란 협상 재개 가능성에 유가 6거래일 만에 하락 전환',
+      source: '국제금융센터(KCIF)', date: '2026-07-25',
+      summary: '미국과 이란의 협상 재개 가능성이 부각되며 국제유가가 6거래일 만에 하락 전환. 지난주 100달러 돌파 이후 지정학 리스크 완화 조짐이 처음 나타난 사례.',
+      url: 'https://www.kcif.or.kr/annual/newsflashList', addedAt: 11
     }
   ];
 
@@ -1182,7 +1289,7 @@ window.filterNews = filterNews;
 document.getElementById('news-add-btn').addEventListener('click', addNews);
 document.getElementById('news-clear-btn').addEventListener('click', clearNewsForm);
 
-(async function init() {
+async function initDashboard() {
   try {
     await loadEntries();
     await seedIfEmpty();
@@ -1197,7 +1304,79 @@ document.getElementById('news-clear-btn').addEventListener('click', clearNewsFor
   } catch (e) {
     document.getElementById('news-list').innerHTML = '<div class="empty">불러오는 중 오류가 발생했습니다.</div>';
   }
-})();
+}
+</script>
+
+<script>
+/* ===== Firebase 설정 (기존 chanho 프로젝트 재사용) ===== */
+const firebaseConfig = {
+  apiKey: "AIzaSyCRUnr99J5LPYOS-BmeG_peLJ6mLw-w1WM",
+  authDomain: "chanho-3f3b7.firebaseapp.com",
+  projectId: "chanho-3f3b7",
+  storageBucket: "chanho-3f3b7.firebasestorage.app",
+  messagingSenderId: "304217868567",
+  appId: "1:304217868567:web:de51cbc01b517a98a10f52"
+};
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const db = firebase.firestore();
+const DASH_COLLECTION = 'investment_dashboard'; // 기존 앱 데이터와 분리된 전용 컬렉션
+
+let isSignupMode = false;
+
+function setAuthError(msg) {
+  document.getElementById('auth-error').textContent = msg || '';
+}
+
+function toggleAuthMode() {
+  isSignupMode = !isSignupMode;
+  document.getElementById('auth-title').textContent = isSignupMode ? '회원가입' : '로그인';
+  document.getElementById('auth-submit-btn').textContent = isSignupMode ? '가입하기' : '로그인';
+  document.getElementById('auth-toggle').innerHTML = isSignupMode
+    ? '이미 계정이 있으신가요? <a id="auth-toggle-link">로그인</a>'
+    : '계정이 없으신가요? <a id="auth-toggle-link">회원가입</a>';
+  document.getElementById('auth-toggle-link').addEventListener('click', toggleAuthMode);
+  setAuthError('');
+}
+document.getElementById('auth-toggle-link').addEventListener('click', toggleAuthMode);
+
+document.getElementById('auth-submit-btn').addEventListener('click', async () => {
+  const email = document.getElementById('auth-email').value.trim();
+  const password = document.getElementById('auth-password').value;
+  setAuthError('');
+  if (!email || !password) { setAuthError('이메일과 비밀번호를 입력해주세요.'); return; }
+  try {
+    if (isSignupMode) {
+      await auth.createUserWithEmailAndPassword(email, password);
+    } else {
+      await auth.signInWithEmailAndPassword(email, password);
+    }
+  } catch (e) {
+    const map = {
+      'auth/email-already-in-use': '이미 가입된 이메일입니다. 로그인해주세요.',
+      'auth/invalid-email': '이메일 형식이 올바르지 않습니다.',
+      'auth/weak-password': '비밀번호는 6자 이상이어야 합니다.',
+      'auth/wrong-password': '비밀번호가 올바르지 않습니다.',
+      'auth/user-not-found': '가입되지 않은 이메일입니다.',
+      'auth/invalid-credential': '이메일 또는 비밀번호가 올바르지 않습니다.'
+    };
+    setAuthError(map[e.code] || ('오류: ' + e.message));
+  }
+});
+
+document.getElementById('logout-btn').addEventListener('click', () => auth.signOut());
+
+auth.onAuthStateChanged((user) => {
+  if (user) {
+    document.getElementById('auth-gate').style.display = 'none';
+    document.getElementById('app-content').style.display = 'block';
+    document.getElementById('user-email').textContent = user.email;
+    initDashboard();
+  } else {
+    document.getElementById('auth-gate').style.display = 'flex';
+    document.getElementById('app-content').style.display = 'none';
+  }
+});
 </script>
 </body>
 </html>
